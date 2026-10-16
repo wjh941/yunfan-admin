@@ -12,8 +12,7 @@ export default defineConfig({
   build: {
     // 生产构建移除 console 调试输出与 debugger（保留 error/warn 便于线上排错）
     esbuild: {
-      drop: ['debugger'],
-      pure: ['console.log', 'console.info', 'console.debug'],
+      drop: ['debugger', 'console'],
     },
     rollupOptions: {
       output: {

@@ -41,9 +41,12 @@ export interface Order {
 export interface Product {
   id: number
   name: string
+  emoji: string
+  desc: string
   category: string
   price: number
   stock: number
+  sold: number
   onSale: boolean
 }
 

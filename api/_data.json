@@ -4210,76 +4210,113 @@
     {
       "id": 1,
       "name": "智能手表 Pro",
+      "emoji": "⌚",
+      "desc": "AMOLED 视网膜屏，血氧心率全天监测，超长续航 14 天",
       "category": "家居",
       "price": 260,
       "stock": 452,
+      "sold": 456,
       "onSale": true
     },
     {
       "id": 2,
       "name": "无线降噪耳机",
+      "emoji": "🎧",
+      "desc": "40dB 主动降噪，HiFi 音质，单次续航 30 小时",
       "category": "数码",
       "price": 1525,
       "stock": 254,
+      "sold": 777,
       "onSale": true
     },
     {
       "id": 3,
       "name": "机械键盘 87键",
+      "emoji": "⌨️",
+      "desc": "全键热插拔轴体，全键无冲，PBT 注塑键帽",
       "category": "配件",
       "price": 3766,
       "stock": 454,
+      "sold": 285,
       "onSale": true
     },
     {
       "id": 4,
       "name": "4K 显示器 27寸",
+      "emoji": "🖥️",
+      "desc": "4K IPS 面板，Type-C 65W 反向充电，升降旋转支架",
       "category": "家居",
       "price": 3722,
       "stock": 147,
+      "sold": 729,
       "onSale": true
     },
     {
       "id": 5,
       "name": "便携充电宝 2万毫安",
+      "emoji": "🔋",
+      "desc": "22.5W 超级快充，支持登机，LED 数显电量",
       "category": "家居",
       "price": 2132,
       "stock": 424,
+      "sold": 656,
       "onSale": true
     },
     {
       "id": 6,
       "name": "电竞鼠标",
+      "emoji": "🖱️",
+      "desc": "26000 DPI 电竞引擎，58g 轻量化设计，RGB 灯效",
       "category": "配件",
       "price": 3737,
       "stock": 379,
+      "sold": 215,
       "onSale": true
     },
     {
       "id": 7,
       "name": "高清摄像头",
+      "emoji": "📷",
+      "desc": "2K 画质，AI 自动对焦，内置双降噪麦克风",
       "category": "家居",
       "price": 1278,
       "stock": 103,
+      "sold": 352,
       "onSale": true
     },
     {
       "id": 8,
       "name": "蓝牙音箱",
+      "emoji": "🔊",
+      "desc": "360° 环绕音效，IPX7 防水，单次续航 24 小时",
       "category": "数码",
       "price": 3495,
       "stock": 189,
+      "sold": 417,
       "onSale": false
     },
     {
       "id": 9,
       "name": "平板电脑 11寸",
+      "emoji": "📱",
+      "desc": "2.5K 120Hz 高刷屏，支持手写笔，八扬声器环绕",
       "category": "家居",
       "price": 3131,
       "stock": 229,
+      "sold": 554,
       "onSale": true
     },
-    { "id": 10, "name": "智能台灯", "category": "家居", "price": 924, "stock": 315, "onSale": true }
+    {
+      "id": 10,
+      "name": "智能台灯",
+      "emoji": "💡",
+      "desc": "国 AA 级照度，无蓝光危害，入座自动亮灯",
+      "category": "家居",
+      "price": 924,
+      "stock": 315,
+      "sold": 111,
+      "onSale": true
+    }
   ],
   "salesTrend": {
     "months": ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月"],

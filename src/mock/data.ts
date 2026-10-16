@@ -90,12 +90,29 @@ export const orders: Order[] = Array.from({ length: 420 }, (_, i) => {
 
 const CATEGORIES = ['数码', '配件', '家居']
 
+// 商品图文案：emoji 当商品图（离线可用），desc 用于详情页（键必须与商品名完全一致）
+const PRODUCT_META: Record<string, { emoji: string; desc: string }> = {
+  '智能手表 Pro': { emoji: '⌚', desc: 'AMOLED 视网膜屏，血氧心率全天监测，超长续航 14 天' },
+  无线降噪耳机: { emoji: '🎧', desc: '40dB 主动降噪，HiFi 音质，单次续航 30 小时' },
+  '机械键盘 87键': { emoji: '⌨️', desc: '全键热插拔轴体，全键无冲，PBT 注塑键帽' },
+  '4K 显示器 27寸': { emoji: '🖥️', desc: '4K IPS 面板，Type-C 65W 反向充电，升降旋转支架' },
+  '便携充电宝 2万毫安': { emoji: '🔋', desc: '22.5W 超级快充，支持登机，LED 数显电量' },
+  电竞鼠标: { emoji: '🖱️', desc: '26000 DPI 电竞引擎，58g 轻量化设计，RGB 灯效' },
+  高清摄像头: { emoji: '📷', desc: '2K 画质，AI 自动对焦，内置双降噪麦克风' },
+  蓝牙音箱: { emoji: '🔊', desc: '360° 环绕音效，IPX7 防水，单次续航 24 小时' },
+  '平板电脑 11寸': { emoji: '📱', desc: '2.5K 120Hz 高刷屏，支持手写笔，八扬声器环绕' },
+  智能台灯: { emoji: '💡', desc: '国 AA 级照度，无蓝光危害，入座自动亮灯' },
+}
+
 export const products: Product[] = PRODUCT_POOL.map((name, i) => ({
   id: 1 + i,
   name,
+  emoji: PRODUCT_META[name].emoji,
+  desc: PRODUCT_META[name].desc,
   category: CATEGORIES[Math.floor(seeded(i + 21) * CATEGORIES.length)],
   price: Math.floor(seeded(i + 22) * 4000 + 99),
   stock: Math.floor(seeded(i + 25) * 500),
+  sold: Math.floor(seeded(i + 26) * 800 + 50),
   onSale: seeded(i + 24) > 0.25,
 }))
 

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Button, Card, Col, Row, Segmented, Skeleton, Space, Timeline } from 'antd'
+import { Button, Card, Col, Row, Segmented, Skeleton, Space, Tag, Timeline } from 'antd'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -243,9 +243,9 @@ export default function Dashboard() {
   const productOption = {
     tooltip: { trigger: 'axis' },
     legend: { data: data.productTrend.series.map((s) => s.name), bottom: 0 },
-    grid: { left: 70, right: 24, top: 20, bottom: 60 },
+    grid: { left: 70, right: 24, top: 40, bottom: 60 },
     xAxis: { type: 'category', data: data.productTrend.months },
-    yAxis: { type: 'value', name: '元' },
+    yAxis: { type: 'value', name: '元', nameGap: 14 },
     series: data.productTrend.series.map((s, i) => ({
       name: s.name,
       type: 'line',
@@ -333,19 +333,29 @@ export default function Dashboard() {
     ],
   }
 
-  const timelineItems = data.recentOrders.map((o) => ({
-    color: STATUS_MAP[o.status].color,
-    children: (
-      <div key={o.id} style={{ fontSize: 13 }}>
-        <div>
-          <strong>{o.userName}</strong> 下单了「{o.product}」
+  const timelineItems = data.recentOrders.map((o) => {
+    const s = STATUS_MAP[o.status]
+    return {
+      color: s.color,
+      children: (
+        <div className="feed-item" key={o.id}>
+          <div className="feed-head">
+            <span className="feed-emoji">{s.emoji}</span>
+            <span className="feed-user">{o.userName}</span>
+            <span>下单了</span>
+            <span className="feed-product">「{o.product}」</span>
+          </div>
+          <div className="feed-meta">
+            <Tag color={s.color} style={{ marginRight: 8 }}>
+              {s.text}
+            </Tag>
+            <span className="feed-amount">¥{o.amount.toLocaleString()}</span>
+            <span className="feed-time">{o.createdAt}</span>
+          </div>
         </div>
-        <div style={{ color: '#999', fontSize: 12 }}>
-          {STATUS_MAP[o.status].text} · ¥{o.amount.toLocaleString()} · {o.createdAt}
-        </div>
-      </div>
-    ),
-  }))
+      ),
+    }
+  })
 
   return (
     <div>
