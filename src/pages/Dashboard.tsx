@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
 import { Card, Col, Row, Skeleton, Statistic, Timeline } from 'antd'
 import type { ReactNode } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import {
   ArrowUpOutlined,
   DollarOutlined,
@@ -73,11 +73,8 @@ function DashboardSkeleton() {
 }
 
 export default function Dashboard() {
-  const [data, setData] = useState<DashboardData | null>(null)
-
-  useEffect(() => {
-    getDashboard().then(setData)
-  }, [])
+  // 数据由 React Query 管理：30 秒缓存内切页秒开，invalidate 后自动刷新
+  const { data } = useQuery({ queryKey: ['dashboard'], queryFn: getDashboard })
 
   if (!data) return <DashboardSkeleton />
 

@@ -154,3 +154,44 @@ body.dark .login-page {
   font-size: 22px;
   color: #fff;
 }
+
+/* ---------- 主题切换过渡（学习 soybean-admin 的丝滑换肤） ---------- */
+body,
+.ant-layout,
+.ant-layout-sider,
+.ant-layout-header,
+.ant-card,
+.ant-menu {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* ---------- 返回顶部 ---------- */
+.back-top {
+  position: fixed;
+  right: 32px;
+  bottom: 48px;
+  z-index: 99;
+  box-shadow: 0 4px 12px rgba(79, 110, 242, 0.35);
+  animation: back-top-in 0.25s ease;
+}
+
+@keyframes back-top-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- 登录卡入场动画 ---------- */
+.login-card {
+  animation: page-fade-in 0.5s ease;
+}
+
+/* ---------- 表格行悬停过渡 ---------- */
+.ant-table-tbody > tr.ant-table-row {
+  transition: background-color 0.2s ease;
+}

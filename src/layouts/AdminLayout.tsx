@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Avatar, Button, Dropdown, Layout, Menu, Space, Tooltip, theme } from 'antd'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Avatar, Breadcrumb, Button, Dropdown, Layout, Menu, Space, Tooltip, theme } from 'antd'
 import {
   AppstoreOutlined,
   DashboardOutlined,
@@ -19,6 +19,7 @@ import type { AccessAction } from '../access'
 import type { ReactNode } from 'react'
 import CommandPalette from '../components/CommandPalette'
 import NotificationBell from '../components/NotificationBell'
+import BackToTop from '../components/BackToTop'
 
 const { Sider, Header, Content, Footer } = Layout
 
@@ -93,7 +94,12 @@ export default function AdminLayout() {
             ) : (
               <MenuFoldOutlined style={{ fontSize: 16 }} onClick={() => setCollapsed(true)} />
             )}
-            <span style={{ fontSize: 15, fontWeight: 600 }}>{TITLES[pathname] ?? ''}</span>
+            <Breadcrumb
+              items={[
+                { title: <Link to="/">首页</Link> },
+                { title: TITLES[pathname] ?? '页面' },
+              ]}
+            />
           </Space>
 
           <Space size={16}>
@@ -147,6 +153,7 @@ export default function AdminLayout() {
           <div className="page-fade" key={pathname}>
             <Outlet />
           </div>
+          <BackToTop />
         </Content>
 
         <Footer style={{ textAlign: 'center', fontSize: 12, color: themeToken.colorTextQuaternary }}>

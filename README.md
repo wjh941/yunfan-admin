@@ -4,13 +4,13 @@
 
 **一个用 React 18 + TypeScript 从零实现的中后台管理系统**
 
-JWT 鉴权 · 服务端分页 CRUD · 三级权限 · ⌘K 命令面板 · 暗色模式 · 数据可视化 · 前后端一体部署
+JWT 鉴权 · 服务端分页 CRUD · 三级权限 · ⌘K 命令面板 · 暗色模式 · React Query 服务端状态 · 数据可视化 · 前后端一体部署
 
 [![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![TanStack Query](https://img.shields.io/badge/TanStack_Query-5-ff4154)](https://tanstack.com/query)
 [![Vite](https://img.shields.io/badge/Vite-5-646cff?logo=vite&logoColor=white)](https://vitejs.dev)
 [![Ant Design](https://img.shields.io/badge/Ant_Design-5-1677ff?logo=antdesign&logoColor=white)](https://ant.design)
-[![ECharts](https://img.shields.io/badge/ECharts-5-aa344d?logo=apacheecharts&logoColor=white)](https://echarts.apache.org)
 [![Deployed on Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000?logo=vercel&logoColor=white)](https://yunfan-admin.vercel.app)
 
 </div>
@@ -21,12 +21,13 @@ JWT 鉴权 · 服务端分页 CRUD · 三级权限 · ⌘K 命令面板 · 暗�
 
 - 🔐 **JWT 登录鉴权** —— axios 拦截器自动携带 token、401 统一回收登录态、路由守卫 + 登录后回跳
 - 🛡️ **三级权限体系** —— 菜单权限 / 路由权限（403 页）/ 按钮权限，权限点收敛在 `src/access.ts`（参考 ant-design-pro 的 access 模式）
-- 🎨 **暗色模式** —— antd algorithm 全局切换，主题偏好持久化
+- ⚡ **React Query 服务端状态** —— 查询缓存（30s 内切页秒开）、翻页 `keepPreviousData` 不闪烁、变更后 `invalidateQueries` 自动失效刷新、通知 30s 轮询
+- 🎨 **暗色模式 + 主题过渡动画** —— antd algorithm 全局切换，换肤平滑过渡（学习 soybean-admin）
 - ⌨️ **⌘K 命令面板** —— 全局搜索页面 / 用户 / 订单，键盘 ↑↓ 导航、回车跳转
 - 📊 **数据可视化** —— ECharts 按需引入（自封装渲染组件，图表包体 -51%），销量排行 / 趋势 / 渠道占比
-- 🚀 **路由级代码分割** —— 每个页面独立 chunk，echarts(531KB) 仅在仪表盘路由加载
+- 🚀 **路由级代码分割** —— React.lazy + Suspense，每页独立 chunk，echarts(531KB) 仅在仪表盘路由加载
 - 🧱 **前后端一体部署** —— 开发环境 json-server，生产环境 Vercel Serverless Functions，接口层零改动切换
-- 📱 响应式布局、页面切换动画、骨架屏、CSV 导出、消息通知中心
+- 🧭 面包屑导航、返回顶部、页面切换动画、骨架屏、CSV 导出、消息通知中心、响应式布局
 
 ## 🖼️ 界面预览
 
@@ -76,6 +77,7 @@ node scripts/gen-db.mjs  # 重置本地数据库
 | manualChunks 函数式分包 | 只对零依赖叶子库（echarts）手动分 chunk，避免 chunk 间循环初始化 | 白屏事故排查与修复，见下文踩坑 |
 | 路由级代码分割 | React.lazy + Suspense，每页独立 chunk（1~29KB） | 非仪表盘路由不加载 echarts |
 | 接口层抽象 | 页面只调 api 函数，Mock → json-server → Serverless 三次切换页面代码零改动 | — |
+| React Query 服务端状态 | `useQuery` 缓存 + `keepPreviousData` 翻页不闪烁 + `invalidateQueries` 变更后自动失效刷新，替代手写请求状态 | 消灭手写 loading/竞态/刷新样板 |
 | tsc 构建门禁 | `tsc --noEmit && vite build`，类型错误在部署前拦截 | — |
 
 ## 🕳️ 踩坑记录（真实调试痕迹）
@@ -111,9 +113,10 @@ node scripts/gen-db.mjs  # 重置本地数据库
 
 ## 🗺️ Roadmap
 
-- [ ] React Query 替代手写请求状态（缓存 / 重试 / 失效管理）
-- [ ] 路由懒加载粒度细化 + 预加载策略
+- [x] React Query 替代手写请求状态（缓存 / 翻页保持 / 失效管理 / 轮询）
+- [x] 路由懒加载 + 主题过渡动画
 - [ ] RBAC 权限配置化（权限点由后端下发）
+- [ ] 多标签页导航（学习 soybean-admin）
 - [ ] Vitest 单元测试覆盖接口层与权限模块
 
 ## 📄 License

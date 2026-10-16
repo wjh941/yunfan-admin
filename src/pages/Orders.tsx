@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Button, Card, Descriptions, Drawer, Select, Space, Table, Tag, message } from 'antd'
 import { STATUS_MAP } from '../constants/status'
 import { useAuth } from '../context/AuthContext'
@@ -12,36 +13,35 @@ const STATUS_OPTIONS = [
   ...Object.entries(STATUS_MAP).map(([value, { text }]) => ({ value, label: text })),
 ]
 
+interface OrderQuery {
+  page: number
+  pageSize: number
+  status: string
+}
+
 export default function Orders() {
   const { user } = useAuth()
+  const queryClient = useQueryClient()
   const canMarkDone = hasAccess(user, 'markOrderDone')
-  const [list, setList] = useState<Order[]>([])
-  const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [query, setQuery] = useState({ page: 1, pageSize: 10, status: '' })
+
+  const [query, setQuery] = useState<OrderQuery>({ page: 1, pageSize: 10, status: '' })
   const [current, setCurrent] = useState<Order | null>(null) // 抽屉里展示的订单
 
-  const [tick, setTick] = useState(0)
-  useEffect(() => {
-    let ignore = false
-    setLoading(true)
-    getOrders(query).then(res => {
-      if (ignore) return
-      setList(res.list)
-      setTotal(res.total)
-      setLoading(false)
-    })
-    return () => {
-      ignore = true
-    }
-  }, [query, tick])
+  // 状态筛选 / 翻页时 keepPreviousData 保持表格内容，配合 loading 半透明过渡
+  const { data, isLoading } = useQuery({
+    queryKey: ['orders', query],
+    queryFn: () => getOrders(query),
+    placeholderData: keepPreviousData,
+  })
 
-  // 按钮级权限：只有管理员能看到「标记完成」
-  const handleMarkDone = async (record: Order) => {
-    await markOrderDone(record.id)
-    message.success(`订单 ${record.id} 已标记为完成`)
-    setTick(t => t + 1)
-  }
+  const markDoneMutation = useMutation({
+    mutationFn: (id: string) => markOrderDone(id),
+    onSuccess: (_data, id) => {
+      message.success(`订单 ${id} 已标记为完成`)
+      void queryClient.invalidateQueries({ queryKey: ['orders'] })
+      void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+  })
 
   const columns: ColumnsType<Order> = [
     { title: '订单号', dataIndex: 'id', width: 140 },
@@ -71,7 +71,13 @@ export default function Orders() {
             查看详情
           </Button>
           {canMarkDone && record.status !== 'done' && (
-            <Button type="link" size="small" style={{ padding: 0 }} onClick={() => handleMarkDone(record)}>
+            <Button
+              type="link"
+              size="small"
+              style={{ padding: 0 }}
+              loading={markDoneMutation.isPending && markDoneMutation.variables === record.id}
+              onClick={() => markDoneMutation.mutate(record.id)}
+            >
               标记完成
             </Button>
           )}
@@ -93,14 +99,14 @@ export default function Orders() {
 
       <Table
         rowKey="id"
-        loading={loading}
+        loading={isLoading}
         columns={columns}
-        dataSource={list}
+        dataSource={data?.list}
         scroll={{ x: 900 }}
         pagination={{
           current: query.page,
           pageSize: query.pageSize,
-          total,
+          total: data?.total ?? 0,
           showSizeChanger: true,
           showTotal: t => `共 ${t} 条`,
           onChange: (page, pageSize) => setQuery(q => ({ ...q, page, pageSize })),

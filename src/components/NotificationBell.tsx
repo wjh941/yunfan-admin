@@ -1,6 +1,6 @@
-// 消息通知中心：铃铛 + 最近订单动态，点击跳转订单页
-import { useState } from 'react'
+// 消息通知中心：铃铛 + 最近订单动态，React Query 每 30 秒自动轮询刷新角标
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { Badge, Button, Empty, List, Popover, Spin } from 'antd'
 import { BellOutlined } from '@ant-design/icons'
 import request from '../api/request'
@@ -13,29 +13,27 @@ const STATUS_TEXT: Record<OrderStatus, { text: string; emoji: string }> = {
   cancelled: { text: '已取消', emoji: '🚫' },
 }
 
+// 拉取最近订单（供角标与弹层共用一份缓存）
+async function fetchRecentOrders(): Promise<Order[]> {
+  const res = await request.get('/orders', {
+    params: { _sort: 'id', _order: 'desc', _limit: 5 },
+  })
+  return res.data
+}
+
 export default function NotificationBell() {
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [orders, setOrders] = useState<Order[]>([])
   const navigate = useNavigate()
 
-  const load = async () => {
-    setLoading(true)
-    try {
-      const res = await request.get('/orders', {
-        params: { _sort: 'id', _order: 'desc', _limit: 5 },
-      })
-      setOrders(res.data)
-    } catch {
-      /* 拉取失败保持空态 */
-    } finally {
-      setLoading(false)
-    }
-  }
+  // refetchInterval：每 30 秒自动轮询，角标实时反映最新订单
+  const { data: orders = [], isFetching } = useQuery({
+    queryKey: ['recentOrders'],
+    queryFn: fetchRecentOrders,
+    refetchInterval: 30_000,
+  })
 
   const content = (
     <div style={{ width: 300 }}>
-      {loading ? (
+      {isFetching && orders.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 28 }}>
           <Spin />
         </div>
@@ -48,10 +46,7 @@ export default function NotificationBell() {
           renderItem={o => (
             <List.Item
               style={{ cursor: 'pointer' }}
-              onClick={() => {
-                setOpen(false)
-                navigate('/orders')
-              }}
+              onClick={() => navigate('/orders')}
             >
               <List.Item.Meta
                 title={
@@ -73,10 +68,7 @@ export default function NotificationBell() {
         type="link"
         block
         size="small"
-        onClick={() => {
-          setOpen(false)
-          navigate('/orders')
-        }}
+        onClick={() => navigate('/orders')}
       >
         查看全部订单
       </Button>
@@ -84,16 +76,7 @@ export default function NotificationBell() {
   )
 
   return (
-    <Popover
-      content={content}
-      trigger="click"
-      placement="bottomRight"
-      open={open}
-      onOpenChange={visible => {
-        setOpen(visible)
-        if (visible) load()
-      }}
-    >
+    <Popover content={content} trigger="click" placement="bottomRight">
       <Badge count={orders.length} size="small" offset={[-2, 2]}>
         <BellOutlined style={{ fontSize: 18, cursor: 'pointer' }} />
       </Badge>

@@ -1,4 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import {
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import {
   Badge,
   Button,
@@ -15,7 +21,7 @@ import {
   Tag,
   message,
 } from 'antd'
-import { PlusOutlined, DownloadOutlined, SearchOutlined } from '@ant-design/icons'
+import { DownloadOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons'
 import { deleteUser, getUsers, saveUser } from '../api'
 import type { User } from '../types'
 import type { ColumnsType } from 'antd/es/table'
@@ -33,31 +39,77 @@ const STATUS_OPTIONS = [
   { value: 'disabled', label: '禁用' },
 ]
 
+interface UserFormValues {
+  name: string
+  age: number
+  email: string
+  role: string
+  status: 'active' | 'disabled'
+}
+
+interface UserQuery {
+  page: number
+  pageSize: number
+  keyword: string
+  status: string
+}
+
 export default function Users() {
-  const [list, setList] = useState<User[]>([])
-  const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(false)
-  const [query, setQuery] = useState({ page: 1, pageSize: 10, keyword: '', status: '' })
+  const queryClient = useQueryClient()
+  const [query, setQuery] = useState<UserQuery>({ page: 1, pageSize: 10, keyword: '', status: '' })
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<User | null>(null) // null 表示新增，否则是正在编辑的记录
-  const [saving, setSaving] = useState(false)
   const [form] = Form.useForm()
 
-  // query 或 tick 变化时重新拉取列表（tick 用于新增/删除后强制刷新）
-  const [tick, setTick] = useState(0)
-  useEffect(() => {
-    let ignore = false
-    setLoading(true)
-    getUsers(query).then(res => {
-      if (ignore) return
-      setList(res.list)
-      setTotal(res.total)
-      setLoading(false)
-    })
-    return () => {
-      ignore = true
-    }
-  }, [query, tick])
+  // 列表数据交给 React Query：query 变化自动重新请求；
+  // keepPreviousData 让翻页时保留上一页数据，表格不闪烁
+  const { data, isLoading } = useQuery({
+    queryKey: ['users', query],
+    queryFn: () => getUsers(query),
+    placeholderData: keepPreviousData,
+  })
+
+  // 变更操作用 useMutation，成功后失效列表缓存自动重新拉取（不再需要手动 tick 刷新）
+  const saveMutation = useMutation({
+    mutationFn: (values: Partial<User> & { id?: number }) => saveUser(values),
+    onSuccess: (_data, variables) => {
+      message.success(variables.id ? '修改成功' : '新增成功')
+      setModalOpen(false)
+      void queryClient.invalidateQueries({ queryKey: ['users'] })
+      void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteUser(id),
+    onSuccess: (_data, id) => {
+      message.success(`已删除 ID 为 ${id} 的用户`)
+      // 当前页删到只剩一条时往前翻一页
+      if ((data?.list.length ?? 0) === 1 && query.page > 1) {
+        setQuery(q => ({ ...q, page: q.page - 1 }))
+      } else {
+        void queryClient.invalidateQueries({ queryKey: ['users'] })
+        void queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      }
+    },
+  })
+
+  const openAdd = () => {
+    setEditing(null)
+    form.resetFields()
+    setModalOpen(true)
+  }
+
+  const openEdit = (record: User) => {
+    setEditing(record)
+    form.setFieldsValue(record)
+    setModalOpen(true)
+  }
+
+  const handleSave = async () => {
+    const values = (await form.validateFields()) as UserFormValues
+    saveMutation.mutate({ ...values, id: editing?.id })
+  }
 
   // 一键导出全部用户为 CSV（带 BOM，Excel 打开中文不乱码）
   const handleExport = async () => {
@@ -86,50 +138,6 @@ export default function Users() {
     message.success({ content: `已导出 ${list.length} 条用户数据`, key: 'export' })
   }
 
-  const openAdd = () => {
-    setEditing(null)
-    form.resetFields()
-    setModalOpen(true)
-  }
-
-  const openEdit = (record: User) => {
-    setEditing(record)
-    form.setFieldsValue(record)
-    setModalOpen(true)
-  }
-
-  const handleSave = async () => {
-    const values = (await form.validateFields()) as UserFormValues
-    setSaving(true)
-    try {
-      await saveUser({ ...values, id: editing?.id })
-      message.success(editing ? '修改成功' : '新增成功')
-      setModalOpen(false)
-      setTick(t => t + 1)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleDelete = async (record: User) => {
-    await deleteUser(record.id)
-    message.success(`已删除「${record.name}」`)
-    // 当前页只剩这一条时往前翻一页
-    if (list.length === 1 && query.page > 1) {
-      setQuery(q => ({ ...q, page: q.page - 1 }))
-    } else {
-      setTick(t => t + 1)
-    }
-  }
-
-  interface UserFormValues {
-    name: string
-    age: number
-    email: string
-    role: string
-    status: 'active' | 'disabled'
-  }
-
   const columns: ColumnsType<User> = [
     { title: 'ID', dataIndex: 'id', width: 80 },
     { title: '姓名', dataIndex: 'name', width: 110 },
@@ -139,7 +147,7 @@ export default function Users() {
       title: '角色',
       dataIndex: 'role',
       width: 90,
-      render: (role: string) => <Tag color={ROLE_COLORS[role]}>{role}</Tag>,
+      render: role => <Tag color={ROLE_COLORS[role]}>{role}</Tag>,
     },
     {
       title: '状态',
@@ -165,7 +173,7 @@ export default function Users() {
           <Popconfirm
             title="确认删除"
             description={`确定要删除「${record.name}」吗？`}
-            onConfirm={() => handleDelete(record)}
+            onConfirm={() => deleteMutation.mutate(record.id)}
           >
             <Button type="link" size="small" danger style={{ padding: 0 }}>
               删除
@@ -205,14 +213,14 @@ export default function Users() {
 
       <Table
         rowKey="id"
-        loading={loading}
+        loading={isLoading}
         columns={columns}
-        dataSource={list}
+        dataSource={data?.list}
         scroll={{ x: 860 }}
         pagination={{
           current: query.page,
           pageSize: query.pageSize,
-          total,
+          total: data?.total ?? 0,
           showSizeChanger: true,
           showTotal: t => `共 ${t} 条`,
           onChange: (page, pageSize) => setQuery(q => ({ ...q, page, pageSize })),
@@ -224,7 +232,7 @@ export default function Users() {
         open={modalOpen}
         onOk={handleSave}
         onCancel={() => setModalOpen(false)}
-        confirmLoading={saving}
+        confirmLoading={saveMutation.isPending}
         destroyOnClose
       >
         <Form form={form} layout="vertical" initialValues={{ role: '访客', status: 'active' }}>
