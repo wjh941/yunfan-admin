@@ -1,0 +1,31 @@
+{
+  "name": "yunfan-admin",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "api": "json-server --watch server/db.json --port 3001 -m server/auth-middleware.cjs",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.4.0",
+    "antd": "^5.20.0",
+    "axios": "^1.20.0",
+    "dayjs": "^1.11.12",
+    "echarts": "^5.5.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "json-server": "^0.17.4",
+    "typescript": "^7.0.2",
+    "vite": "^5.4.0"
+  }
+}

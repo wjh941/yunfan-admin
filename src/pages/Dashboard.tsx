@@ -1,0 +1,225 @@
+import { useEffect, useState } from 'react'
+import { Card, Col, Row, Skeleton, Statistic, Timeline } from 'antd'
+import type { ReactNode } from 'react'
+import {
+  ArrowUpOutlined,
+  DollarOutlined,
+  FallOutlined,
+  ShoppingOutlined,
+  TeamOutlined,
+} from '@ant-design/icons'
+import EChart from '../components/EChart'
+import { STATUS_MAP } from '../constants/status'
+import { getDashboard } from '../api'
+import type { DashboardData } from '../types'
+
+function StatCard({
+  icon,
+  bg,
+  title,
+  value,
+  precision,
+  suffix,
+  extra,
+}: {
+  icon: ReactNode
+  bg: string
+  title: string
+  value: number
+  precision?: number
+  suffix?: string
+  extra: ReactNode
+}) {
+  return (
+    <Card className="stat-card">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Statistic title={title} value={value} precision={precision} suffix={suffix} />
+        <div className="stat-icon" style={{ background: bg }}>
+          {icon}
+        </div>
+      </div>
+      <div style={{ marginTop: 8, fontSize: 13, color: '#999' }}>{extra}</div>
+    </Card>
+  )
+}
+
+// 加载骨架屏：占位结构与真实布局一致，加载完成不会跳动
+function DashboardSkeleton() {
+  return (
+    <div>
+      <Row gutter={[16, 16]}>
+        {[0, 1, 2, 3].map(i => (
+          <Col xs={24} sm={12} lg={6} key={i}>
+            <Card>
+              <Skeleton active paragraph={{ rows: 1 }} />
+            </Card>
+          </Col>
+        ))}
+      </Row>
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        <Col xs={24} lg={14}>
+          <Card>
+            <Skeleton active paragraph={{ rows: 6 }} />
+          </Card>
+        </Col>
+        <Col xs={24} lg={10}>
+          <Card>
+            <Skeleton active paragraph={{ rows: 6 }} />
+          </Card>
+        </Col>
+      </Row>
+    </div>
+  )
+}
+
+export default function Dashboard() {
+  const [data, setData] = useState<DashboardData | null>(null)
+
+  useEffect(() => {
+    getDashboard().then(setData)
+  }, [])
+
+  if (!data) return <DashboardSkeleton />
+
+  const lineOption = {
+    tooltip: { trigger: 'axis' },
+    grid: { left: 50, right: 24, top: 30, bottom: 34 },
+    xAxis: { type: 'category', data: data.salesTrend.months },
+    yAxis: { type: 'value', name: '万元' },
+    series: [
+      {
+        name: '销售额',
+        type: 'line',
+        smooth: true,
+        data: data.salesTrend.values,
+        areaStyle: { opacity: 0.15 },
+        itemStyle: { color: '#4f6ef2' },
+      },
+    ],
+  }
+
+  const pieOption = {
+    tooltip: { trigger: 'item', formatter: '{b}：{c} ({d}%)' },
+    legend: { bottom: 0 },
+    series: [
+      {
+        type: 'pie',
+        radius: ['42%', '66%'],
+        data: data.channels,
+        label: { formatter: '{b}\n{d}%' },
+      },
+    ],
+  }
+
+  // 横向条形图：销量升序排列，第一名的柱子显示在最上面
+  const topAsc = [...data.topProducts].reverse()
+  const topOption = {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params: { name: string; value: number }[]) => {
+        const p = params[0]
+        const item = data.topProducts.find(x => x.name === p.name)
+        return `${p.name}<br/>销量 ${p.value} 件 · 销售额 ¥${(item?.amount ?? 0).toLocaleString()}`
+      },
+    },
+    grid: { left: 110, right: 40, top: 10, bottom: 24 },
+    xAxis: { type: 'value' },
+    yAxis: { type: 'category', data: topAsc.map(p => p.name) },
+    series: [
+      {
+        type: 'bar',
+        data: topAsc.map(p => p.qty),
+        barWidth: 14,
+        itemStyle: { color: '#4f6ef2', borderRadius: [0, 7, 7, 0] },
+      },
+    ],
+  }
+
+  const timelineItems = data.recentOrders.map(o => ({
+    color: STATUS_MAP[o.status].color,
+    children: (
+      <div key={o.id} style={{ fontSize: 13 }}>
+        <div>
+          <strong>{o.userName}</strong> 下单了「{o.product}」
+        </div>
+        <div style={{ color: '#999', fontSize: 12 }}>
+          {STATUS_MAP[o.status].text} · ¥{o.amount.toLocaleString()} · {o.createdAt}
+        </div>
+      </div>
+    ),
+  }))
+
+  return (
+    <div>
+      <Row gutter={[16, 16]}>
+        <Col xs={24} sm={12} lg={6}>
+          <StatCard
+            icon={<TeamOutlined />}
+            bg="#4f6ef2"
+            title="总用户数"
+            value={data.userCount}
+            extra={<span><ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +12.4%</span>}
+          />
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <StatCard
+            icon={<ShoppingOutlined />}
+            bg="#722ed1"
+            title="订单总数"
+            value={data.orderCount}
+            extra={<span><ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +8.1%</span>}
+          />
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <StatCard
+            icon={<DollarOutlined />}
+            bg="#fa8c16"
+            title="本月销售额"
+            value={data.salesAmount}
+            precision={1}
+            suffix="万"
+            extra={<span><ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +9.0%</span>}
+          />
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <StatCard
+            icon={<FallOutlined />}
+            bg="#13c2c2"
+            title="支付转化率"
+            value={data.conversion}
+            precision={1}
+            suffix="%"
+            extra={<span><ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +0.3%</span>}
+          />
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        <Col xs={24} lg={14}>
+          <Card title="月度销售额趋势">
+            <EChart option={lineOption} style={{ height: 300 }} />
+          </Card>
+        </Col>
+        <Col xs={24} lg={10}>
+          <Card title="流量渠道占比">
+            <EChart option={pieOption} style={{ height: 300 }} />
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        <Col xs={24} lg={14}>
+          <Card title="商品销量 TOP5">
+            <EChart option={topOption} style={{ height: 300 }} />
+          </Card>
+        </Col>
+        <Col xs={24} lg={10}>
+          <Card title="最新动态">
+            <Timeline items={timelineItems} style={{ marginTop: 12 }} />
+          </Card>
+        </Col>
+      </Row>
+    </div>
+  )
+}

@@ -1,0 +1,156 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- 登录页 ---------- */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #e6f4ff 0%, #f0f5ff 50%, #f9f0ff 100%);
+  transition: background 0.3s ease;
+}
+
+body.dark .login-page {
+  background: linear-gradient(135deg, #14162b 0%, #1c1b33 60%, #191430 100%);
+}
+
+.login-card {
+  width: 380px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(22, 119, 255, 0.12);
+}
+
+/* ---------- 页面切换动画 ---------- */
+@keyframes page-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.page-fade {
+  animation: page-fade-in 0.28s ease;
+}
+
+/* 统计卡片悬停轻微上浮 */
+.stat-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(79, 110, 242, 0.15);
+}
+
+/* ---------- ⌘K 命令面板 ---------- */
+.palette-trigger .kbd {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border: 1px solid rgba(128, 128, 128, 0.35);
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 18px;
+  opacity: 0.65;
+}
+
+.palette-list {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 6px;
+  border-top: 1px solid rgba(128, 128, 128, 0.15);
+}
+
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.palette-active {
+  background: rgba(79, 110, 242, 0.12);
+}
+
+.palette-badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 4px;
+  color: #fff;
+}
+
+.palette-page {
+  background: #4f6ef2;
+}
+
+.palette-user {
+  background: #13c2c2;
+}
+
+.palette-order {
+  background: #fa8c16;
+}
+
+.palette-title {
+  font-size: 14px;
+}
+
+.palette-hint {
+  margin-left: auto;
+  font-size: 12px;
+  opacity: 0.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.palette-empty {
+  text-align: center;
+  padding: 32px 0;
+  opacity: 0.5;
+  font-size: 13px;
+}
+
+.palette-footer {
+  text-align: center;
+  font-size: 11px;
+  opacity: 0.4;
+  padding: 8px 0 10px;
+}
+
+/* ---------- 布局 ---------- */
+.logo {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #fff;
+}
