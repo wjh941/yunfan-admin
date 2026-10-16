@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Button, Card, Descriptions, Drawer, Select, Space, Table, Tag, message } from 'antd'
 import { STATUS_MAP } from '../constants/status'
 import { useAuth } from '../context/AuthContext'
+import { hasAccess } from '../access'
 import { getOrders, markOrderDone } from '../api'
 import type { Order, OrderStatus } from '../types'
 import type { ColumnsType } from 'antd/es/table'
@@ -13,7 +14,7 @@ const STATUS_OPTIONS = [
 
 export default function Orders() {
   const { user } = useAuth()
-  const isAdmin = user?.role === 'admin'
+  const canMarkDone = hasAccess(user, 'markOrderDone')
   const [list, setList] = useState<Order[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -69,7 +70,7 @@ export default function Orders() {
           <Button type="link" size="small" style={{ padding: 0 }} onClick={() => setCurrent(record)}>
             查看详情
           </Button>
-          {isAdmin && record.status !== 'done' && (
+          {canMarkDone && record.status !== 'done' && (
             <Button type="link" size="small" style={{ padding: 0 }} onClick={() => handleMarkDone(record)}>
               标记完成
             </Button>

@@ -14,16 +14,24 @@ import {
 } from '@ant-design/icons'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
+import { hasAccess } from '../access'
+import type { AccessAction } from '../access'
+import type { ReactNode } from 'react'
 import CommandPalette from '../components/CommandPalette'
 import NotificationBell from '../components/NotificationBell'
 
 const { Sider, Header, Content, Footer } = Layout
 
-const MENU_ITEMS = [
-  { key: '/', icon: <DashboardOutlined />, label: '仪表盘', roles: ['admin', 'guest'] },
-  { key: '/users', icon: <TeamOutlined />, label: '用户管理', roles: ['admin'] },
-  { key: '/orders', icon: <ShoppingOutlined />, label: '订单管理', roles: ['admin', 'guest'] },
-  { key: '/products', icon: <AppstoreOutlined />, label: '商品管理', roles: ['admin'] },
+const MENU_ITEMS: {
+  key: string
+  icon: ReactNode
+  label: string
+  access?: AccessAction
+}[] = [
+  { key: '/', icon: <DashboardOutlined />, label: '仪表盘' },
+  { key: '/users', icon: <TeamOutlined />, label: '用户管理', access: 'viewUsers' },
+  { key: '/orders', icon: <ShoppingOutlined />, label: '订单管理' },
+  { key: '/products', icon: <AppstoreOutlined />, label: '商品管理', access: 'viewProducts' },
 ]
 
 const TITLES: Record<string, string> = {
@@ -41,9 +49,9 @@ export default function AdminLayout() {
   const { dark, toggle } = useTheme()
   const { token: themeToken } = theme.useToken()
 
-  // 菜单权限：只显示当前角色可见的菜单项
-  const visibleMenuItems = MENU_ITEMS.filter(item =>
-    user?.role ? item.roles.includes(user.role) : false,
+  // 菜单权限：只显示当前角色有权限点的菜单项（判断逻辑收敛在 access.ts）
+  const visibleMenuItems = MENU_ITEMS.filter(
+    item => !item.access || hasAccess(user, item.access),
   )
 
   return (

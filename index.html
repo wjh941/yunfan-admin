@@ -4,9 +4,57 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>云帆 Admin · 后台管理系统</title>
+    <style>
+      /* 首屏加载动画：在 JS 加载完成前给用户即时反馈，消除白屏 */
+      #initial-loading {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        background: #f5f6f8;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+          'Microsoft YaHei', sans-serif;
+        color: #1f2328;
+      }
+      .loader-logo {
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: 1px;
+      }
+      .loader-bar {
+        width: 140px;
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(79, 110, 242, 0.18);
+        overflow: hidden;
+        position: relative;
+      }
+      .loader-bar::after {
+        content: '';
+        position: absolute;
+        left: -40%;
+        width: 40%;
+        height: 100%;
+        border-radius: 2px;
+        background: #4f6ef2;
+        animation: load-slide 1s ease-in-out infinite;
+      }
+      @keyframes load-slide {
+        to {
+          left: 100%;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="initial-loading">
+        <div class="loader-logo">⛵ 云帆管理后台</div>
+        <div class="loader-bar"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
