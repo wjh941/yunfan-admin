@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Button, Card, Col, Row, Skeleton, Statistic, Timeline } from 'antd'
+import { Button, Card, Col, Row, Segmented, Skeleton, Space, Statistic, Timeline } from 'antd'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -15,6 +15,7 @@ import { STATUS_MAP } from '../constants/status'
 import { hasAccess } from '../access'
 import { getDashboard } from '../api'
 import { useAuth } from '../context/AuthContext'
+import { linearForecast } from '../utils/forecast'
 import type { AccessAction } from '../types'
 
 function StatCard({
@@ -88,6 +89,8 @@ export default function Dashboard() {
   const { user } = useAuth()
   // 图表下钻状态：null = 全年月度视图，'1月' 等 = 该月每日视图
   const [drillMonth, setDrillMonth] = useState<string | null>(null)
+  // 趋势卡视图：总览（可下钻）/ 分产品多折线 / 预测分析
+  const [view, setView] = useState<'overview' | 'product' | 'forecast'>('overview')
   // Hooks 必须在任何条件 return 之前调用
   const chartBoxRef = useRef<HTMLDivElement | null>(null)
   // 数据由 React Query 管理：30 秒缓存内切页秒开，invalidate 后自动刷新
@@ -110,8 +113,8 @@ export default function Dashboard() {
     setDrillMonth(months[clamped])
   }
 
-  // 图表下钻：drillMonth 有值时切换为该月每日销售额折线
-  const daily = drillMonth ? data.salesDaily[drillMonth] : undefined
+  // 图表下钻：总览视图下，drillMonth 有值时切换为该月每日销售额折线
+  const daily = drillMonth && view === 'overview' ? data.salesDaily[drillMonth] : undefined
   const lineOption = daily
     ? {
         tooltip: { trigger: 'axis' },
@@ -145,6 +148,63 @@ export default function Dashboard() {
           },
         ],
       }
+
+  // 「分产品」多折线：TOP5 产品各自的月度销售额（从全量订单按月聚合）
+  const SERIES_COLORS = ['#4f6ef2', '#fa8c16', '#13c2c2', '#722ed1', '#52c41a']
+  const productOption = {
+    tooltip: { trigger: 'axis' },
+    legend: { data: data.productTrend.series.map((s) => s.name), bottom: 0 },
+    grid: { left: 70, right: 24, top: 20, bottom: 60 },
+    xAxis: { type: 'category', data: data.productTrend.months },
+    yAxis: { type: 'value', name: '元' },
+    series: data.productTrend.series.map((s, i) => ({
+      name: s.name,
+      type: 'line',
+      smooth: true,
+      data: s.data,
+      lineStyle: { width: 2 },
+      itemStyle: { color: SERIES_COLORS[i % SERIES_COLORS.length] },
+    })),
+  }
+
+  // 「预测」视图：历史实际 + 最小二乘线性外推（虚线），markLine 标出预测起点
+  const fc = linearForecast(data.salesTrend.values, 2)
+  const lastActual = data.salesTrend.values[data.salesTrend.values.length - 1]
+  const forecastOption = {
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['实际销售额', '预测销售额'], bottom: 0 },
+    grid: { left: 50, right: 24, top: 30, bottom: 60 },
+    xAxis: { type: 'category', data: [...data.salesTrend.months, '11月', '12月'] },
+    yAxis: { type: 'value', name: '万元' },
+    series: [
+      {
+        name: '实际销售额',
+        type: 'line',
+        smooth: true,
+        data: [...data.salesTrend.values, null, null],
+        areaStyle: { opacity: 0.15 },
+        itemStyle: { color: '#4f6ef2' },
+      },
+      {
+        name: '预测销售额',
+        type: 'line',
+        smooth: true,
+        data: [...Array(data.salesTrend.values.length - 1).fill(null), lastActual, ...fc.forecast],
+        lineStyle: { type: 'dashed' },
+        itemStyle: { color: '#fa8c16' },
+        markLine: {
+          silent: true,
+          symbol: 'none',
+          lineStyle: { type: 'dashed', color: '#999' },
+          label: { formatter: '预测起点', position: 'insideEndTop' },
+          data: [{ xAxis: data.salesTrend.months[data.salesTrend.months.length - 1] }],
+        },
+      },
+    ],
+  }
+
+  const trendOption =
+    view === 'product' ? productOption : view === 'forecast' ? forecastOption : lineOption
 
   const pieOption = {
     tooltip: { trigger: 'item', formatter: '{b}：{c} ({d}%)' },
@@ -266,21 +326,47 @@ export default function Dashboard() {
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col xs={24} lg={14}>
           <Card
-            title={drillMonth ? `${drillMonth} · 每日销售额` : '月度销售额趋势'}
+            title={
+              view === 'overview' && drillMonth
+                ? `${drillMonth} · 每日销售额`
+                : view === 'product'
+                  ? '分产品销售额趋势（TOP5）'
+                  : view === 'forecast'
+                    ? '销售额预测 · 线性回归外推'
+                    : '月度销售额趋势'
+            }
             extra={
-              drillMonth ? (
-                <Button size="small" onClick={() => setDrillMonth(null)}>
-                  ← 返回全年
-                </Button>
-              ) : (
-                <span style={{ fontSize: 12, color: '#999' }}>
-                  点击图表任意位置可查看当月每日明细
-                </span>
-              )
+              <Space>
+                {view === 'overview' && drillMonth && (
+                  <Button size="small" onClick={() => setDrillMonth(null)}>
+                    ← 返回全年
+                  </Button>
+                )}
+                <Segmented
+                  size="small"
+                  value={view}
+                  onChange={(v) => setView(v as typeof view)}
+                  options={[
+                    { label: '总览', value: 'overview' },
+                    { label: '分产品', value: 'product' },
+                    { label: '预测', value: 'forecast' },
+                  ]}
+                />
+              </Space>
             }
           >
             <div ref={chartBoxRef}>
-              <EChart option={lineOption} style={{ height: 300 }} onZrClick={handleTrendZrClick} />
+              {view === 'forecast' && (
+                <div style={{ fontSize: 12, color: '#999', marginBottom: 8 }}>
+                  基于近 10 个月最小二乘线性回归外推 · 拟合优度 R² = {fc.r2} · 预计 11 月{' '}
+                  <strong>{fc.forecast[0]} 万</strong> / 12 月 <strong>{fc.forecast[1]} 万</strong>
+                </div>
+              )}
+              <EChart
+                option={trendOption}
+                style={{ height: 300 }}
+                onZrClick={view === 'overview' ? handleTrendZrClick : undefined}
+              />
             </div>
           </Card>
         </Col>

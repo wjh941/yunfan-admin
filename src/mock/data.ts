@@ -1,4 +1,12 @@
-import type { ChannelItem, DailySales, Order, OrderStatus, Product, SalesTrend, User } from '../types'
+import type {
+  ChannelItem,
+  DailySales,
+  Order,
+  OrderStatus,
+  Product,
+  SalesTrend,
+  User,
+} from '../types'
 
 // 确定性伪随机：同样的序号永远生成同样的数据，演示效果稳定
 function seeded(n: number) {
@@ -7,8 +15,26 @@ function seeded(n: number) {
 }
 
 const NAME_POOL = [
-  '张伟', '王芳', '李娜', '刘洋', '陈静', '杨帆', '赵磊', '黄敏', '周涛', '吴倩',
-  '徐强', '孙丽', '马超', '朱婷', '胡军', '郭欣', '林峰', '何雨', '高远', '罗雪',
+  '张伟',
+  '王芳',
+  '李娜',
+  '刘洋',
+  '陈静',
+  '杨帆',
+  '赵磊',
+  '黄敏',
+  '周涛',
+  '吴倩',
+  '徐强',
+  '孙丽',
+  '马超',
+  '朱婷',
+  '胡军',
+  '郭欣',
+  '林峰',
+  '何雨',
+  '高远',
+  '罗雪',
 ]
 const ROLES = ['管理员', '运营', '编辑', '访客']
 const DOMAINS = ['qq.com', '163.com', 'gmail.com', 'outlook.com']
@@ -30,25 +56,35 @@ export const users: User[] = Array.from({ length: 47 }, (_, i) => ({
 }))
 
 const PRODUCT_POOL = [
-  '智能手表 Pro', '无线降噪耳机', '机械键盘 87键', '4K 显示器 27寸',
-  '便携充电宝 2万毫安', '电竞鼠标', '高清摄像头', '蓝牙音箱',
-  '平板电脑 11寸', '智能台灯',
+  '智能手表 Pro',
+  '无线降噪耳机',
+  '机械键盘 87键',
+  '4K 显示器 27寸',
+  '便携充电宝 2万毫安',
+  '电竞鼠标',
+  '高清摄像头',
+  '蓝牙音箱',
+  '平板电脑 11寸',
+  '智能台灯',
 ]
 const ORDER_STATUS: OrderStatus[] = ['pending', 'paid', 'done', 'cancelled']
 
-export const orders: Order[] = Array.from({ length: 63 }, (_, i) => {
+// 420 笔订单铺满 10 个月：既让「分产品」多折线平滑可读，也更能展示服务端分页
+export const orders: Order[] = Array.from({ length: 420 }, (_, i) => {
   const product = PRODUCT_POOL[Math.floor(seeded(i + 11) * PRODUCT_POOL.length)]
   const user = users[Math.floor(seeded(i + 12) * users.length)]
+  const month = String(1 + Math.floor(seeded(i + 15) * 10)).padStart(2, '0')
+  const day = String(1 + Math.floor(seeded(i + 16) * 28)).padStart(2, '0')
+  const hour = String(Math.floor(seeded(i + 17) * 24)).padStart(2, '0')
+  const minute = String(Math.floor(seeded(i + 18) * 60)).padStart(2, '0')
   return {
-    id: `SO2026${String(88000 + i * 7)}`,
+    id: `SO2026${String(88000 + i * 3)}`,
     product,
-    qty: 1 + Math.floor(seeded(i + 18) * 3),
+    qty: 1 + Math.floor(seeded(i + 19) * 3),
     amount: Math.floor(seeded(i + 13) * 4000 + 99),
     userName: user.name,
     status: ORDER_STATUS[Math.floor(seeded(i + 14) * ORDER_STATUS.length)],
-    createdAt: `2026-10-${String(1 + Math.floor(seeded(i + 15) * 15)).padStart(2, '0')} ${String(
-      Math.floor(seeded(i + 16) * 24),
-    ).padStart(2, '0')}:${String(Math.floor(seeded(i + 17) * 60)).padStart(2, '0')}`,
+    createdAt: `2026-${month}-${day} ${hour}:${minute}`,
   }
 })
 
@@ -76,7 +112,7 @@ export const salesDaily: Record<string, DailySales> = Object.fromEntries(
     const dayCount = 30
     const weights = Array.from({ length: dayCount }, (_, j) => 0.6 + seeded(i * 37 + j + 101))
     const sum = weights.reduce((a, b) => a + b, 0)
-    const values = weights.map(w => +(w / sum * total).toFixed(1))
+    const values = weights.map((w) => +((w / sum) * total).toFixed(1))
     const monthNo = i + 1
     const days = Array.from({ length: dayCount }, (_, j) => `${monthNo}/${j + 1}`)
     return [month, { days, values }]

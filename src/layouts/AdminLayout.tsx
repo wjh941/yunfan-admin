@@ -69,9 +69,7 @@ export default function AdminLayout() {
   const { token: themeToken } = theme.useToken()
 
   // 菜单权限：只显示当前角色有权限点的菜单项（判断逻辑收敛在 access.ts）
-  const visibleMenuItems = MENU_ITEMS.filter(
-    item => !item.access || hasAccess(user, item.access),
-  )
+  const visibleMenuItems = MENU_ITEMS.filter((item) => !item.access || hasAccess(user, item.access))
 
   // 多标签页：访问过的页面自动生成标签，持久化到 localStorage
   const [tabs, setTabs] = useLocalStorage<PageTab[]>('yunfan_tabs', [{ key: '/', label: '仪表盘' }])
@@ -79,17 +77,49 @@ export default function AdminLayout() {
   useEffect(() => {
     const label = TITLES[pathname]
     if (label) {
-      setTabs(ts => (ts.some(t => t.key === pathname) ? ts : [...ts, { key: pathname, label }]))
+      setTabs((ts) => (ts.some((t) => t.key === pathname) ? ts : [...ts, { key: pathname, label }]))
     }
   }, [pathname, setTabs, tabs])
 
   const removeTab = (targetKey: string) => {
-    const next = tabs.filter(t => t.key !== targetKey)
+    const next = tabs.filter((t) => t.key !== targetKey)
     setTabs(next)
     // 关闭的是当前页 → 跳到剩余的最后一个标签
     if (targetKey === pathname && next.length > 0) {
       navigate(next[next.length - 1].key)
     }
+  }
+
+  // 标签右键菜单：刷新 / 关闭当前 / 关闭其他 / 关闭右侧（学习 soybean-admin）
+  const buildTabMenu = (t: PageTab) => ({
+    items: [
+      ...(t.key === pathname ? [{ key: 'refresh', label: '刷新页面' }] : []),
+      { key: 'close', label: '关闭标签', disabled: t.key === '/' },
+      { key: 'others', label: '关闭其他标签' },
+      { key: 'right', label: '关闭右侧标签' },
+    ],
+    onClick: ({ key }: { key: string }) => handleTabMenu(t, key),
+  })
+
+  const handleTabMenu = (t: PageTab, action: string) => {
+    if (action === 'refresh') {
+      window.location.reload()
+      return
+    }
+    setTabs((ts) => {
+      let kept = ts
+      if (action === 'close') kept = ts.filter((x) => x.key === '/' || x.key !== t.key)
+      else if (action === 'others') kept = ts.filter((x) => x.key === '/' || x.key === t.key)
+      else if (action === 'right') {
+        const idx = ts.findIndex((x) => x.key === t.key)
+        kept = ts.filter((x, i) => i <= idx)
+      }
+      // 关掉了当前页 → 跳到保留标签的最后一个
+      if (pathname === t.key && !kept.some((x) => x.key === pathname) && kept.length > 0) {
+        navigate(kept[kept.length - 1].key)
+      }
+      return kept
+    })
   }
 
   return (
@@ -102,7 +132,7 @@ export default function AdminLayout() {
         collapsible
         collapsed={collapsed}
         breakpoint="lg"
-        onBreakpoint={broken => setCollapsed(broken)}
+        onBreakpoint={(broken) => setCollapsed(broken)}
       >
         <div className="logo">{collapsed ? '⛵' : '⛵ 云帆管理后台'}</div>
         <Menu
@@ -132,10 +162,7 @@ export default function AdminLayout() {
               <MenuFoldOutlined style={{ fontSize: 16 }} onClick={() => setCollapsed(true)} />
             )}
             <Breadcrumb
-              items={[
-                { title: <Link to="/">首页</Link> },
-                { title: TITLES[pathname] ?? '页面' },
-              ]}
+              items={[{ title: <Link to="/">首页</Link> }, { title: TITLES[pathname] ?? '页面' }]}
             />
           </Space>
 
@@ -151,12 +178,7 @@ export default function AdminLayout() {
             </Button>
 
             <Tooltip title={dark ? '切换亮色模式' : '切换暗色模式'}>
-              <Button
-                type="text"
-                size="small"
-                style={{ fontSize: 16 }}
-                onClick={toggle}
-              >
+              <Button type="text" size="small" style={{ fontSize: 16 }} onClick={toggle}>
                 {dark ? '☀️' : '🌙'}
               </Button>
             </Tooltip>
@@ -166,15 +188,15 @@ export default function AdminLayout() {
             <Dropdown
               menu={{
                 items: [
-                {
-                  key: 'logout',
-                  icon: <LogoutOutlined />,
-                  label: '退出登录',
-                  onClick: () => {
-                    localStorage.removeItem('yunfan_tabs') // 不同角色的标签互不影响
-                    logout()
+                  {
+                    key: 'logout',
+                    icon: <LogoutOutlined />,
+                    label: '退出登录',
+                    onClick: () => {
+                      localStorage.removeItem('yunfan_tabs') // 不同角色的标签互不影响
+                      logout()
+                    },
                   },
-                },
                 ],
               }}
             >
@@ -188,15 +210,23 @@ export default function AdminLayout() {
           </Space>
         </Header>
 
-        {/* 多标签页导航（学习 soybean-admin）：首页标签固定不可关闭 */}
+        {/* 多标签页导航（学习 soybean-admin）：首页标签固定不可关闭，右键有批量操作菜单 */}
         <div className="tab-bar" style={{ background: themeToken.colorBgContainer }}>
           <Tabs
             type="editable-card"
             size="small"
             hideAdd
             activeKey={pathname}
-            items={tabs.map(t => ({ key: t.key, label: t.label, closable: t.key !== '/' }))}
-            onChange={key => navigate(key)}
+            items={tabs.map((t) => ({
+              key: t.key,
+              closable: t.key !== '/',
+              label: (
+                <Dropdown trigger={['contextMenu']} menu={buildTabMenu(t)}>
+                  <span>{t.label}</span>
+                </Dropdown>
+              ),
+            }))}
+            onChange={(key) => navigate(key)}
             onEdit={(targetKey, action) => action === 'remove' && removeTab(String(targetKey))}
           />
         </div>
@@ -209,7 +239,9 @@ export default function AdminLayout() {
           <BackToTop />
         </Content>
 
-        <Footer style={{ textAlign: 'center', fontSize: 12, color: themeToken.colorTextQuaternary }}>
+        <Footer
+          style={{ textAlign: 'center', fontSize: 12, color: themeToken.colorTextQuaternary }}
+        >
           云帆 Admin · React 18 + Vite + Ant Design + ECharts
         </Footer>
       </Layout>

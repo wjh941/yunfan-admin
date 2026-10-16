@@ -24,25 +24,41 @@ export async function login(username: string, password: string): Promise<LoginRe
 }
 
 export async function getDashboard(): Promise<DashboardData> {
-  const [usersRes, ordersRes, dashboardRes, salesTrendRes, salesDailyRes, channelsRes, recentRes, allOrdersRes] =
-    await Promise.all([
-      request.get('/users', { params: { _limit: 1 } }),
-      request.get('/orders', { params: { _limit: 1 } }),
-      request.get('/dashboard'),
-      request.get('/salesTrend'),
-      request.get('/salesDaily'),
-      request.get('/channels'),
-      request.get('/orders', { params: { _sort: 'id', _order: 'desc', _limit: 5 } }),
-      request.get('/orders', { params: { _limit: 9999 } }),
-    ])
+  const [
+    usersRes,
+    ordersRes,
+    dashboardRes,
+    salesTrendRes,
+    salesDailyRes,
+    channelsRes,
+    recentRes,
+    allOrdersRes,
+  ] = await Promise.all([
+    request.get('/users', { params: { _limit: 1 } }),
+    request.get('/orders', { params: { _limit: 1 } }),
+    request.get('/dashboard'),
+    request.get('/salesTrend'),
+    request.get('/salesDaily'),
+    request.get('/channels'),
+    request.get('/orders', { params: { _sort: 'id', _order: 'desc', _limit: 5 } }),
+    request.get('/orders', { params: { _limit: 9999 } }),
+  ])
 
-  // 聚合商品销量 TOP5（前端聚合，两个后端实现都能用）
+  // 聚合商品销量 TOP5 + 分产品月度销售额（前端聚合，两个后端实现都能用）
   const acc = new Map<string, { name: string; qty: number; amount: number }>()
+  const months = salesTrendRes.data.months
+  const monthlyAmounts = new Map<string, number[]>()
   for (const o of allOrdersRes.data as Order[]) {
     const cur = acc.get(o.product) ?? { name: o.product, qty: 0, amount: 0 }
     cur.qty += o.qty
     cur.amount += o.amount
     acc.set(o.product, cur)
+
+    // 按下单月份归集各产品销售额（用于「分产品」多折线视图）
+    const m = Math.min(months.length - 1, Math.max(0, Number(o.createdAt.slice(5, 7)) - 1))
+    const arr = monthlyAmounts.get(o.product) ?? Array<number>(months.length).fill(0)
+    arr[m] += o.amount
+    monthlyAmounts.set(o.product, arr)
   }
   const topProducts = [...acc.values()].sort((a, b) => b.qty - a.qty).slice(0, 5)
 
@@ -53,6 +69,13 @@ export async function getDashboard(): Promise<DashboardData> {
     conversion: dashboardRes.data.conversion,
     salesTrend: salesTrendRes.data,
     salesDaily: salesDailyRes.data,
+    productTrend: {
+      months,
+      series: topProducts.map((tp) => ({
+        name: tp.name,
+        data: monthlyAmounts.get(tp.name) ?? Array<number>(months.length).fill(0),
+      })),
+    },
     channels: channelsRes.data,
     recentOrders: recentRes.data,
     topProducts,
@@ -61,7 +84,12 @@ export async function getDashboard(): Promise<DashboardData> {
 
 export async function getUsers(query: UserQuery = {}): Promise<PagedResult<User>> {
   const { page = 1, pageSize = 10, keyword = '', status = '' } = query
-  const params: Record<string, unknown> = { _page: page, _limit: pageSize, _sort: 'id', _order: 'desc' }
+  const params: Record<string, unknown> = {
+    _page: page,
+    _limit: pageSize,
+    _sort: 'id',
+    _order: 'desc',
+  }
   if (keyword) params.q = keyword // json-server 的全文搜索
   if (status) params.status = status
   return paged<User>('/users', params)
@@ -82,7 +110,12 @@ export async function deleteUser(id: number): Promise<void> {
 
 export async function getOrders(query: OrderQuery = {}): Promise<PagedResult<Order>> {
   const { page = 1, pageSize = 10, status = '' } = query
-  const params: Record<string, unknown> = { _page: page, _limit: pageSize, _sort: 'id', _order: 'desc' }
+  const params: Record<string, unknown> = {
+    _page: page,
+    _limit: pageSize,
+    _sort: 'id',
+    _order: 'desc',
+  }
   if (status) params.status = status
   return paged<Order>('/orders', params)
 }

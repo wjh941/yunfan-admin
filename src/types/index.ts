@@ -75,6 +75,12 @@ export interface TopProduct {
   amount: number
 }
 
+/** 分产品月度销售额趋势（多折线视图） */
+export interface ProductTrend {
+  months: string[]
+  series: { name: string; data: number[] }[]
+}
+
 export interface DashboardData {
   userCount: number
   orderCount: number
@@ -82,6 +88,7 @@ export interface DashboardData {
   conversion: number
   salesTrend: SalesTrend
   salesDaily: Record<string, DailySales>
+  productTrend: ProductTrend
   channels: ChannelItem[]
   recentOrders: Order[]
   topProducts: TopProduct[]
