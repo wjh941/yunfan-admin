@@ -330,6 +330,62 @@ export default function Dashboard() {
     ],
   }
 
+  // —— TOP5 销量排行 ——（奖牌排名 + 轨道背景 + 数值标签）
+  const rankedAsc = [...data.topProducts].reverse() // 升序：销量最高的显示在最上面
+  const topOption = {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params: { name: string; value: number }[]) => {
+        const p = params[0]
+        const item = data.topProducts.find((x) => x.name === p.name)
+        return `${p.name}<br/>销量 ${p.value} 件 · 销售额 ¥${(item?.amount ?? 0).toLocaleString()}`
+      },
+    },
+    grid: { left: 110, right: 64, top: 8, bottom: 8 },
+    xAxis: { type: 'value', axisLabel: { show: false }, splitLine: { show: false } },
+    yAxis: {
+      type: 'category',
+      data: rankedAsc.map((p) => p.name),
+      axisTick: { show: false },
+      axisLine: { show: false },
+      axisLabel: {
+        fontSize: 12,
+        formatter: (name: string) => {
+          const rank = data.topProducts.findIndex((p) => p.name === name) + 1
+          const medal = ['🥇', '🥈', '🥉'][rank - 1] ?? `${rank}`
+          return `${medal} ${name}`
+        },
+      },
+    },
+    series: [
+      {
+        type: 'bar',
+        data: rankedAsc.map((p) => p.qty),
+        barWidth: 16,
+        itemStyle: { borderRadius: [0, 8, 8, 0], color: '#4f6ef2', opacity: 0.9 },
+        showBackground: true,
+        backgroundStyle: { color: 'rgba(128, 128, 128, 0.1)', borderRadius: [0, 8, 8, 0] },
+        label: { show: true, position: 'right', formatter: '{c} 件', color: '#999', fontSize: 12 },
+      },
+    ],
+  }
+
+  // —— 渠道占比环形图 ——
+  const pieOption = {
+    tooltip: { trigger: 'item', formatter: '{b}：{c} ({d}%)' },
+    legend: { bottom: 0 },
+    series: [
+      {
+        type: 'pie',
+        radius: ['42%', '66%'],
+        center: ['50%', '46%'],
+        data: data.channels,
+        label: { formatter: '{b}\n{d}%' },
+      },
+    ],
+  }
+
   const trendOption =
     view === 'product'
       ? (productFocusOption ?? productOption)
@@ -475,6 +531,19 @@ export default function Dashboard() {
             extra={<span style={{ fontSize: 12, color: '#999' }}>点击可查看订单详情</span>}
           >
             <Timeline items={timelineItems} />
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        <Col xs={24} lg={14}>
+          <Card title="商品销量 TOP5">
+            <EChart option={topOption} style={{ height: 300 }} />
+          </Card>
+        </Col>
+        <Col xs={24} lg={10}>
+          <Card title="流量渠道占比">
+            <EChart option={pieOption} style={{ height: 300 }} />
           </Card>
         </Col>
       </Row>
