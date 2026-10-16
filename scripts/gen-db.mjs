@@ -3,7 +3,7 @@
 // - api/_data.json   → Vercel Serverless 函数使用（打包进函数）
 // 用法：node scripts/gen-db.mjs
 import { writeFileSync, mkdirSync, copyFileSync } from 'node:fs'
-import { users, orders, products, salesTrend, channels } from '../src/mock/data.ts'
+import { users, orders, products, salesTrend, salesDaily, channels } from '../src/mock/data.ts'
 
 mkdirSync(new URL('../server/', import.meta.url), { recursive: true })
 mkdirSync(new URL('../api/', import.meta.url), { recursive: true })
@@ -13,6 +13,7 @@ const db = {
   orders,
   products,
   salesTrend,
+  salesDaily,
   channels,
   dashboard: { salesAmount: 172.0, conversion: 3.6 },
 }

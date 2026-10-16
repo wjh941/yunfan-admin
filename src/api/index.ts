@@ -24,12 +24,13 @@ export async function login(username: string, password: string): Promise<LoginRe
 }
 
 export async function getDashboard(): Promise<DashboardData> {
-  const [usersRes, ordersRes, dashboardRes, salesTrendRes, channelsRes, recentRes, allOrdersRes] =
+  const [usersRes, ordersRes, dashboardRes, salesTrendRes, salesDailyRes, channelsRes, recentRes, allOrdersRes] =
     await Promise.all([
       request.get('/users', { params: { _limit: 1 } }),
       request.get('/orders', { params: { _limit: 1 } }),
       request.get('/dashboard'),
       request.get('/salesTrend'),
+      request.get('/salesDaily'),
       request.get('/channels'),
       request.get('/orders', { params: { _sort: 'id', _order: 'desc', _limit: 5 } }),
       request.get('/orders', { params: { _limit: 9999 } }),
@@ -51,6 +52,7 @@ export async function getDashboard(): Promise<DashboardData> {
     salesAmount: dashboardRes.data.salesAmount,
     conversion: dashboardRes.data.conversion,
     salesTrend: salesTrendRes.data,
+    salesDaily: salesDailyRes.data,
     channels: channelsRes.data,
     recentOrders: recentRes.data,
     topProducts,

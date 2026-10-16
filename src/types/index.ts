@@ -1,8 +1,13 @@
 // 全局业务类型定义：接口返回值、组件 props 都从这里引用
+
+/** 权限点：由后端登录接口下发，前端动态渲染 */
+export type AccessAction = 'viewUsers' | 'viewProducts' | 'markOrderDone'
+
 export interface AuthUser {
   name: string
   role: 'admin' | 'guest'
   avatar: string
+  permissions: AccessAction[]
 }
 
 export interface LoginResult {
@@ -53,6 +58,12 @@ export interface SalesTrend {
   values: number[]
 }
 
+/** 单月每日销售额（图表下钻数据） */
+export interface DailySales {
+  days: string[]
+  values: number[]
+}
+
 export interface ChannelItem {
   name: string
   value: number
@@ -70,6 +81,7 @@ export interface DashboardData {
   salesAmount: number
   conversion: number
   salesTrend: SalesTrend
+  salesDaily: Record<string, DailySales>
   channels: ChannelItem[]
   recentOrders: Order[]
   topProducts: TopProduct[]

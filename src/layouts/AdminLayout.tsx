@@ -1,6 +1,17 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Avatar, Breadcrumb, Button, Dropdown, Layout, Menu, Space, Tooltip, theme } from 'antd'
+import {
+  Avatar,
+  Breadcrumb,
+  Button,
+  Dropdown,
+  Layout,
+  Menu,
+  Space,
+  Tabs,
+  Tooltip,
+  theme,
+} from 'antd'
 import {
   AppstoreOutlined,
   DashboardOutlined,
@@ -20,8 +31,15 @@ import type { ReactNode } from 'react'
 import CommandPalette from '../components/CommandPalette'
 import NotificationBell from '../components/NotificationBell'
 import BackToTop from '../components/BackToTop'
+import { useLocalStorage } from '../hooks/useLocalStorage'
 
 const { Sider, Header, Content, Footer } = Layout
+
+/** 已打开页面的标签（多标签页导航，学习 soybean-admin） */
+interface PageTab {
+  key: string
+  label: string
+}
 
 const MENU_ITEMS: {
   key: string
@@ -54,6 +72,25 @@ export default function AdminLayout() {
   const visibleMenuItems = MENU_ITEMS.filter(
     item => !item.access || hasAccess(user, item.access),
   )
+
+  // 多标签页：访问过的页面自动生成标签，持久化到 localStorage
+  const [tabs, setTabs] = useLocalStorage<PageTab[]>('yunfan_tabs', [{ key: '/', label: '仪表盘' }])
+
+  useEffect(() => {
+    const label = TITLES[pathname]
+    if (label) {
+      setTabs(ts => (ts.some(t => t.key === pathname) ? ts : [...ts, { key: pathname, label }]))
+    }
+  }, [pathname, setTabs, tabs])
+
+  const removeTab = (targetKey: string) => {
+    const next = tabs.filter(t => t.key !== targetKey)
+    setTabs(next)
+    // 关闭的是当前页 → 跳到剩余的最后一个标签
+    if (targetKey === pathname && next.length > 0) {
+      navigate(next[next.length - 1].key)
+    }
+  }
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -129,12 +166,15 @@ export default function AdminLayout() {
             <Dropdown
               menu={{
                 items: [
-                  {
-                    key: 'logout',
-                    icon: <LogoutOutlined />,
-                    label: '退出登录',
-                    onClick: logout,
+                {
+                  key: 'logout',
+                  icon: <LogoutOutlined />,
+                  label: '退出登录',
+                  onClick: () => {
+                    localStorage.removeItem('yunfan_tabs') // 不同角色的标签互不影响
+                    logout()
                   },
+                },
                 ],
               }}
             >
@@ -147,6 +187,19 @@ export default function AdminLayout() {
             </Dropdown>
           </Space>
         </Header>
+
+        {/* 多标签页导航（学习 soybean-admin）：首页标签固定不可关闭 */}
+        <div className="tab-bar" style={{ background: themeToken.colorBgContainer }}>
+          <Tabs
+            type="editable-card"
+            size="small"
+            hideAdd
+            activeKey={pathname}
+            items={tabs.map(t => ({ key: t.key, label: t.label, closable: t.key !== '/' }))}
+            onChange={key => navigate(key)}
+            onEdit={(targetKey, action) => action === 'remove' && removeTab(String(targetKey))}
+          />
+        </div>
 
         <Content style={{ margin: 16 }}>
           {/* key 换页面时重新挂载，触发入场动画 */}

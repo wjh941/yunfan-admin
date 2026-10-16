@@ -1,8 +1,13 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  test: {
+    // 纯函数测试（权限判断 / 分页工具）跑在 Node 环境即可
+    environment: 'node',
+  },
   build: {
     rollupOptions: {
       output: {

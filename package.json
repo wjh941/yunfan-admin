@@ -8,6 +8,7 @@
     "api": "json-server --watch server/db.json --port 3001 -m server/auth-middleware.cjs",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -27,6 +28,7 @@
     "@vitejs/plugin-react": "^4.3.1",
     "json-server": "^0.17.4",
     "typescript": "^7.0.2",
-    "vite": "^5.4.0"
+    "vite": "^5.4.0",
+    "vitest": "^2.1.9"
   }
 }

@@ -8,8 +8,20 @@ module.exports = (req, res, next) => {
     const { username, password } = req.body ?? {}
 
     const ACCOUNTS = {
-      admin: { password: '123456', user: { name: '管理员', role: 'admin', avatar: '管' } },
-      guest: { password: '123456', user: { name: '访客用户', role: 'guest', avatar: '访' } },
+      admin: {
+        password: '123456',
+        user: {
+          name: '管理员',
+          role: 'admin',
+          avatar: '管',
+          // RBAC：权限点由后端下发，前端只负责按权限渲染
+          permissions: ['viewUsers', 'viewProducts', 'markOrderDone'],
+        },
+      },
+      guest: {
+        password: '123456',
+        user: { name: '访客用户', role: 'guest', avatar: '访', permissions: [] },
+      },
     }
     const account = ACCOUNTS[username]
 
