@@ -62,6 +62,15 @@ export async function getDashboard(): Promise<DashboardData> {
   }
   const topProducts = [...acc.values()].sort((a, b) => b.qty - a.qty).slice(0, 5)
 
+  // 卡片迷你趋势线：由销售额趋势派生的确定性示意序列（有起伏、无随机）
+  const base: number[] = salesTrendRes.data.values
+  const miniTrends = {
+    users: base.map((v, i) => 300 + i * 45 + Math.round(v * 10)),
+    orders: base.map((v, i) => 180 + i * 32 + Math.round(v * 14)),
+    sales: base,
+    conversion: base.map((v, i) => +(2.2 + (v % 9) * 0.18 + i * 0.04).toFixed(2)),
+  }
+
   return {
     userCount: Number(usersRes.headers['x-total-count']),
     orderCount: Number(ordersRes.headers['x-total-count']),
@@ -79,6 +88,7 @@ export async function getDashboard(): Promise<DashboardData> {
     channels: channelsRes.data,
     recentOrders: recentRes.data,
     topProducts,
+    miniTrends,
   }
 }
 

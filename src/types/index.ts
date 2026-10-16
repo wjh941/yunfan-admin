@@ -92,6 +92,8 @@ export interface DashboardData {
   channels: ChannelItem[]
   recentOrders: Order[]
   topProducts: TopProduct[]
+  /** 统计卡迷你趋势线（sparkline 数据源） */
+  miniTrends: Record<'users' | 'orders' | 'sales' | 'conversion', number[]>
 }
 
 export interface UserQuery {

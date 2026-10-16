@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Button, Card, Col, Row, Segmented, Skeleton, Space, Statistic, Timeline } from 'antd'
+import { Button, Card, Col, Row, Segmented, Skeleton, Space, Timeline } from 'antd'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -11,10 +11,12 @@ import {
   TeamOutlined,
 } from '@ant-design/icons'
 import EChart from '../components/EChart'
+import Sparkline from '../components/Sparkline'
 import { STATUS_MAP } from '../constants/status'
 import { hasAccess } from '../access'
 import { getDashboard } from '../api'
 import { useAuth } from '../context/AuthContext'
+import { useCountUp } from '../hooks/useCountUp'
 import { linearForecast } from '../utils/forecast'
 import type { AccessAction } from '../types'
 
@@ -25,7 +27,9 @@ function StatCard({
   value,
   precision,
   suffix,
+  spark,
   extra,
+  index = 0,
   onClick,
 }: {
   icon: ReactNode
@@ -34,23 +38,46 @@ function StatCard({
   value: number
   precision?: number
   suffix?: string
+  spark: number[]
   extra: ReactNode
+  index?: number
   onClick?: () => void
 }) {
+  // 数字滚动动画：挂载和数据刷新时都会从 0 数到目标值
+  const animated = useCountUp(value)
+  const display = precision
+    ? animated.toFixed(precision)
+    : Math.round(animated).toLocaleString('zh-CN')
+
   return (
     <Card
       className="stat-card"
       hoverable={!!onClick}
       onClick={onClick}
-      style={onClick ? { cursor: 'pointer' } : undefined}
+      style={{
+        cursor: onClick ? 'pointer' : undefined,
+        animationDelay: `${index * 0.08}s`,
+      }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Statistic title={title} value={value} precision={precision} suffix={suffix} />
+      <div className="stat-top">
+        <span className="stat-title">{title}</span>
         <div className="stat-icon" style={{ background: bg }}>
           {icon}
         </div>
       </div>
-      <div style={{ marginTop: 8, fontSize: 13, color: '#999' }}>{extra}</div>
+
+      <div className="stat-middle">
+        <span className="stat-num">
+          {display}
+          {suffix && <span className="stat-suffix">{suffix}</span>}
+        </span>
+        <Sparkline data={spark} color={bg} />
+      </div>
+
+      <div className="stat-bottom">
+        <span className="stat-extra">{extra}</span>
+        {onClick && <span className="stat-more">查看详情 →</span>}
+      </div>
     </Card>
   )
 }
@@ -101,6 +128,68 @@ export default function Dashboard() {
   // 权限感知的卡片跳转：没有对应权限点的卡片不可点击
   const cardClick = (action: AccessAction, path: string) =>
     hasAccess(user, action) ? () => navigate(path) : undefined
+
+  // 统计卡配置：统一描述四张卡片（点击 = 拥有对应权限点时跳转模块）
+  const cards = [
+    {
+      icon: <TeamOutlined />,
+      bg: '#4f6ef2',
+      title: '总用户数',
+      value: data.userCount,
+      spark: data.miniTrends.users,
+      extra: (
+        <span>
+          <ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +12.4%
+        </span>
+      ),
+      path: '/users',
+      access: 'viewUsers' as AccessAction,
+    },
+    {
+      icon: <ShoppingOutlined />,
+      bg: '#722ed1',
+      title: '订单总数',
+      value: data.orderCount,
+      spark: data.miniTrends.orders,
+      extra: (
+        <span>
+          <ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +8.1%
+        </span>
+      ),
+      path: '/orders',
+    },
+    {
+      icon: <DollarOutlined />,
+      bg: '#fa8c16',
+      title: '本月销售额',
+      value: data.salesAmount,
+      precision: 1,
+      suffix: '万',
+      spark: data.miniTrends.sales,
+      extra: (
+        <span>
+          <ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +9.0%
+        </span>
+      ),
+      path: '/orders',
+    },
+    {
+      icon: <FallOutlined />,
+      bg: '#13c2c2',
+      title: '支付转化率',
+      value: data.conversion,
+      precision: 1,
+      suffix: '%',
+      spark: data.miniTrends.conversion,
+      extra: (
+        <span>
+          <ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +0.3%
+        </span>
+      ),
+      path: '/products',
+      access: 'viewProducts' as AccessAction,
+    },
+  ]
 
   // 区域下钻：点击趋势图任意位置，按横坐标换算出最近的月份
   const handleTrendZrClick = (e: { offsetX: number; offsetY: number }) => {
@@ -261,66 +350,22 @@ export default function Dashboard() {
   return (
     <div>
       <Row gutter={[16, 16]}>
-        <Col xs={24} sm={12} lg={6}>
-          <StatCard
-            icon={<TeamOutlined />}
-            bg="#4f6ef2"
-            title="总用户数"
-            value={data.userCount}
-            extra={
-              <span>
-                <ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +12.4%
-              </span>
-            }
-            onClick={cardClick('viewUsers', '/users')}
-          />
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <StatCard
-            icon={<ShoppingOutlined />}
-            bg="#722ed1"
-            title="订单总数"
-            value={data.orderCount}
-            extra={
-              <span>
-                <ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +8.1%
-              </span>
-            }
-            onClick={() => navigate('/orders')}
-          />
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <StatCard
-            icon={<DollarOutlined />}
-            bg="#fa8c16"
-            title="本月销售额"
-            value={data.salesAmount}
-            precision={1}
-            suffix="万"
-            extra={
-              <span>
-                <ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +9.0%
-              </span>
-            }
-            onClick={() => navigate('/orders')}
-          />
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <StatCard
-            icon={<FallOutlined />}
-            bg="#13c2c2"
-            title="支付转化率"
-            value={data.conversion}
-            precision={1}
-            suffix="%"
-            extra={
-              <span>
-                <ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +0.3%
-              </span>
-            }
-            onClick={cardClick('viewProducts', '/products')}
-          />
-        </Col>
+        {cards.map((c, i) => (
+          <Col xs={24} sm={12} lg={6} key={c.title}>
+            <StatCard
+              icon={c.icon}
+              bg={c.bg}
+              title={c.title}
+              value={c.value}
+              precision={c.precision}
+              suffix={c.suffix}
+              spark={c.spark}
+              extra={c.extra}
+              index={i}
+              onClick={c.access ? cardClick(c.access, c.path) : () => navigate(c.path)}
+            />
+          </Col>
+        ))}
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
