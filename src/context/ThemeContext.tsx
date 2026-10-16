@@ -15,7 +15,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       dark,
-      toggle: () => setDark(d => !d),
+      toggle: () => setDark((d) => !d),
     }),
     [dark, setDark],
   )
@@ -26,6 +26,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- Context 与配套 Hook 同文件是社区惯例
 export function useTheme() {
   const ctx = useContext(ThemeContext)
   if (!ctx) throw new Error('useTheme 必须在 <ThemeProvider> 内使用')

@@ -33,30 +33,33 @@ export default function CommandPalette() {
   })
   const [active, setActive] = useState(0)
 
-  // 全局快捷键 ⌘K / Ctrl+K：开 / 关面板
+  // 全局快捷键 ⌘K / Ctrl+K：开 / 关面板（打开时重置搜索状态）
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
-        setOpen(o => !o)
+        if (open) {
+          setOpen(false)
+        } else {
+          setQuery('')
+          setRemote({ users: [], orders: [] })
+          setActive(0)
+          setOpen(true)
+        }
       }
     }
     // 头部按钮通过自定义事件打开面板
-    const onOpen = () => setOpen(true)
+    const onOpen = () => {
+      setQuery('')
+      setRemote({ users: [], orders: [] })
+      setActive(0)
+      setOpen(true)
+    }
     window.addEventListener('keydown', onKey)
     window.addEventListener('yunfan:open-palette', onOpen)
     return () => {
       window.removeEventListener('keydown', onKey)
       window.removeEventListener('yunfan:open-palette', onOpen)
-    }
-  }, [])
-
-  // 打开时重置状态
-  useEffect(() => {
-    if (open) {
-      setQuery('')
-      setRemote({ users: [], orders: [] })
-      setActive(0)
     }
   }, [open])
 
@@ -64,10 +67,7 @@ export default function CommandPalette() {
   useEffect(() => {
     if (!open) return undefined
     const kw = query.trim()
-    if (!kw) {
-      setRemote({ users: [], orders: [] })
-      return undefined
-    }
+    if (!kw) return undefined
     const timer = setTimeout(async () => {
       try {
         const [u, o] = await Promise.all([
@@ -84,26 +84,31 @@ export default function CommandPalette() {
 
   const pages = useMemo(
     () =>
-      PAGES.filter(p => (user?.role ? p.roles.includes(user.role) : false)).filter(
-        p => !query.trim() || p.title.includes(query.trim()),
+      PAGES.filter((p) => (user?.role ? p.roles.includes(user.role) : false)).filter(
+        (p) => !query.trim() || p.title.includes(query.trim()),
       ),
     [user, query],
   )
 
-  // 拍平结果，供键盘 ↑↓ 导航
-  const flat = useMemo<PaletteItem[]>(
-    () => [
-      ...pages.map(p => ({ type: 'page' as const, id: p.key, title: p.title, hint: p.hint })),
-      ...remote.users.map(u => ({ type: 'user' as const, id: u.id, title: u.name, hint: u.email })),
-      ...remote.orders.map(o => ({
+  // 拍平结果，供键盘 ↑↓ 导航（关键词为空时派生空结果）
+  const flat = useMemo<PaletteItem[]>(() => {
+    const shown = query.trim() ? remote : { users: [] as User[], orders: [] as Order[] }
+    return [
+      ...pages.map((p) => ({ type: 'page' as const, id: p.key, title: p.title, hint: p.hint })),
+      ...shown.users.map((u) => ({
+        type: 'user' as const,
+        id: u.id,
+        title: u.name,
+        hint: u.email,
+      })),
+      ...shown.orders.map((o) => ({
         type: 'order' as const,
         id: o.id,
         title: `${o.id} · ${o.product}`,
         hint: `${o.userName} · ¥${o.amount.toLocaleString()}`,
       })),
-    ],
-    [pages, remote],
-  )
+    ]
+  }, [pages, remote, query])
 
   const run = useCallback(
     (item: PaletteItem) => {
@@ -118,10 +123,10 @@ export default function CommandPalette() {
   const onInputKey = (e: ReactKeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setActive(i => Math.min(i + 1, flat.length - 1))
+      setActive((i) => Math.min(i + 1, flat.length - 1))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
-      setActive(i => Math.max(i - 1, 0))
+      setActive((i) => Math.max(i - 1, 0))
     } else if (e.key === 'Enter' && flat[active]) {
       run(flat[active])
     }
@@ -143,7 +148,7 @@ export default function CommandPalette() {
         autoFocus
         placeholder="搜索页面、用户、订单…  ↑↓ 选择 · 回车跳转 · Esc 关闭"
         value={query}
-        onChange={e => {
+        onChange={(e) => {
           setQuery(e.target.value)
           setActive(0)
         }}

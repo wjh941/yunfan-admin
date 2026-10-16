@@ -11,7 +11,8 @@ interface AuthContextValue {
   logout: () => void
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null)
+// 导出 Context 本体是为了组件测试时可以注入桩数据（正常业务代码请使用 useAuth）
+export const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useLocalStorage<string | null>('yunfan_token', null)
@@ -45,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- Context 与配套 Hook 同文件是社区惯例
 export function useAuth() {
   const ctx = useContext(AuthContext)
   if (!ctx) throw new Error('useAuth 必须在 <AuthProvider> 内使用')

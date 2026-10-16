@@ -15,7 +15,7 @@ import { STATUS_MAP } from '../constants/status'
 import { hasAccess } from '../access'
 import { getDashboard } from '../api'
 import { useAuth } from '../context/AuthContext'
-import type { AccessAction, DashboardData } from '../types'
+import type { AccessAction } from '../types'
 
 function StatCard({
   icon,
@@ -59,7 +59,7 @@ function DashboardSkeleton() {
   return (
     <div>
       <Row gutter={[16, 16]}>
-        {[0, 1, 2, 3].map(i => (
+        {[0, 1, 2, 3].map((i) => (
           <Col xs={24} sm={12} lg={6} key={i}>
             <Card>
               <Skeleton active paragraph={{ rows: 1 }} />
@@ -167,24 +167,24 @@ export default function Dashboard() {
       axisPointer: { type: 'shadow' },
       formatter: (params: { name: string; value: number }[]) => {
         const p = params[0]
-        const item = data.topProducts.find(x => x.name === p.name)
+        const item = data.topProducts.find((x) => x.name === p.name)
         return `${p.name}<br/>销量 ${p.value} 件 · 销售额 ¥${(item?.amount ?? 0).toLocaleString()}`
       },
     },
     grid: { left: 110, right: 40, top: 10, bottom: 24 },
     xAxis: { type: 'value' },
-    yAxis: { type: 'category', data: topAsc.map(p => p.name) },
+    yAxis: { type: 'category', data: topAsc.map((p) => p.name) },
     series: [
       {
         type: 'bar',
-        data: topAsc.map(p => p.qty),
+        data: topAsc.map((p) => p.qty),
         barWidth: 14,
         itemStyle: { color: '#4f6ef2', borderRadius: [0, 7, 7, 0] },
       },
     ],
   }
 
-  const timelineItems = data.recentOrders.map(o => ({
+  const timelineItems = data.recentOrders.map((o) => ({
     color: STATUS_MAP[o.status].color,
     children: (
       <div key={o.id} style={{ fontSize: 13 }}>
@@ -207,7 +207,11 @@ export default function Dashboard() {
             bg="#4f6ef2"
             title="总用户数"
             value={data.userCount}
-            extra={<span><ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +12.4%</span>}
+            extra={
+              <span>
+                <ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +12.4%
+              </span>
+            }
             onClick={cardClick('viewUsers', '/users')}
           />
         </Col>
@@ -217,7 +221,11 @@ export default function Dashboard() {
             bg="#722ed1"
             title="订单总数"
             value={data.orderCount}
-            extra={<span><ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +8.1%</span>}
+            extra={
+              <span>
+                <ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +8.1%
+              </span>
+            }
             onClick={() => navigate('/orders')}
           />
         </Col>
@@ -229,7 +237,11 @@ export default function Dashboard() {
             value={data.salesAmount}
             precision={1}
             suffix="万"
-            extra={<span><ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +9.0%</span>}
+            extra={
+              <span>
+                <ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +9.0%
+              </span>
+            }
             onClick={() => navigate('/orders')}
           />
         </Col>
@@ -241,7 +253,11 @@ export default function Dashboard() {
             value={data.conversion}
             precision={1}
             suffix="%"
-            extra={<span><ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +0.3%</span>}
+            extra={
+              <span>
+                <ArrowUpOutlined style={{ color: '#52c41a' }} /> 较上月 +0.3%
+              </span>
+            }
             onClick={cardClick('viewProducts', '/products')}
           />
         </Col>
@@ -257,7 +273,9 @@ export default function Dashboard() {
                   ← 返回全年
                 </Button>
               ) : (
-                <span style={{ fontSize: 12, color: '#999' }}>点击图表任意位置可查看当月每日明细</span>
+                <span style={{ fontSize: 12, color: '#999' }}>
+                  点击图表任意位置可查看当月每日明细
+                </span>
               )
             }
           >

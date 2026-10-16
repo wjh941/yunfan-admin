@@ -34,18 +34,28 @@ JWT 鉴权 · 服务端分页 CRUD · 三级权限 · ⌘K 命令面板 · 暗�
 - 🧪 **Vitest 单测 + CI** —— 权限判断与分页工具 12 个用例，GitHub Actions 自动执行类型检查 / 测试 / 构建
 - 🧭 面包屑导航、返回顶部、页面切换动画、骨架屏、CSV 导出、消息通知中心、响应式布局
 
+## 📈 Lighthouse 跑分
+
+> 生产构建本地跑分（Chrome headless），完整报告见 [docs/lighthouse.html](docs/lighthouse.html)
+
+| 性能   | 可访问性 | 最佳实践 | SEO    | 累积布局偏移 CLS    |
+| ------ | -------- | -------- | ------ | ------------------- |
+| **89** | **94**   | **96**   | **82** | **0**（无布局抖动） |
+
+首屏 JS 传输约 309KB（gzip），echarts 533KB 仅在仪表盘路由按需加载。
+
 ## 🖼️ 界面预览
 
-| 登录 | 命令面板 |
-|---|---|
+| 登录                           | 命令面板                                     |
+| ------------------------------ | -------------------------------------------- |
 | ![登录](docs/images/login.png) | ![命令面板](docs/images/command-palette.png) |
 
-| 用户管理 | 订单管理 |
-|---|---|
+| 用户管理                           | 订单管理                            |
+| ---------------------------------- | ----------------------------------- |
 | ![用户管理](docs/images/users.png) | ![订单管理](docs/images/orders.png) |
 
-| 暗色模式 | 无权限访问 |
-|---|---|
+| 暗色模式                               | 无权限访问                  |
+| -------------------------------------- | --------------------------- |
 | ![暗色模式](docs/images/dark-mode.png) | ![403](docs/images/403.png) |
 
 ## 🚀 快速开始
@@ -75,15 +85,15 @@ node scripts/gen-db.mjs  # 重置本地数据库
 
 ## 🧱 工程亮点
 
-| 实践 | 说明 | 效果 |
-|---|---|---|
-| axios 二次封装 | 实例化 + 请求/响应拦截器，token 注入、401 回收、错误统一包装 | 页面层零错误处理样板 |
-| 自封装 EChart 组件 | echarts-for-react 内部全量引入 echarts，按需加载失效；自封装 30 行组件 + echarts/core 注册 | 图表包体 1052KB → 513KB |
-| manualChunks 函数式分包 | 只对零依赖叶子库（echarts）手动分 chunk，避免 chunk 间循环初始化 | 白屏事故排查与修复，见下文踩坑 |
-| 路由级代码分割 | React.lazy + Suspense，每页独立 chunk（1~29KB） | 非仪表盘路由不加载 echarts |
-| 接口层抽象 | 页面只调 api 函数，Mock → json-server → Serverless 三次切换页面代码零改动 | — |
-| React Query 服务端状态 | `useQuery` 缓存 + `keepPreviousData` 翻页不闪烁 + `invalidateQueries` 变更后自动失效刷新，替代手写请求状态 | 消灭手写 loading/竞态/刷新样板 |
-| tsc 构建门禁 | `tsc --noEmit && vite build`，类型错误在部署前拦截 | — |
+| 实践                    | 说明                                                                                                       | 效果                           |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| axios 二次封装          | 实例化 + 请求/响应拦截器，token 注入、401 回收、错误统一包装                                               | 页面层零错误处理样板           |
+| 自封装 EChart 组件      | echarts-for-react 内部全量引入 echarts，按需加载失效；自封装 30 行组件 + echarts/core 注册                 | 图表包体 1052KB → 513KB        |
+| manualChunks 函数式分包 | 只对零依赖叶子库（echarts）手动分 chunk，避免 chunk 间循环初始化                                           | 白屏事故排查与修复，见下文踩坑 |
+| 路由级代码分割          | React.lazy + Suspense，每页独立 chunk（1~29KB）                                                            | 非仪表盘路由不加载 echarts     |
+| 接口层抽象              | 页面只调 api 函数，Mock → json-server → Serverless 三次切换页面代码零改动                                  | —                              |
+| React Query 服务端状态  | `useQuery` 缓存 + `keepPreviousData` 翻页不闪烁 + `invalidateQueries` 变更后自动失效刷新，替代手写请求状态 | 消灭手写 loading/竞态/刷新样板 |
+| tsc 构建门禁            | `tsc --noEmit && vite build`，类型错误在部署前拦截                                                         | —                              |
 
 ## 🕳️ 踩坑记录（真实调试痕迹）
 

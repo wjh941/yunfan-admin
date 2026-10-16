@@ -5,6 +5,7 @@ import { useAuth } from './context/AuthContext'
 import AdminLayout from './layouts/AdminLayout'
 import Login from './pages/Login'
 import Forbidden from './pages/Forbidden'
+import NotFound from './pages/NotFound'
 import PageLoading from './components/PageLoading'
 import { hasAccess } from './access'
 import type { AccessAction } from './access'
@@ -86,7 +87,7 @@ export default function App() {
           }
         />
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   )
 }

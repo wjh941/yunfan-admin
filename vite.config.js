@@ -5,10 +5,16 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   test: {
-    // 纯函数测试（权限判断 / 分页工具）跑在 Node 环境即可
-    environment: 'node',
+    // 组件测试默认跑 jsdom；纯 Node 测试用 // @vitest-environment node 单独标注
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
   },
   build: {
+    // 生产构建移除 console 调试输出与 debugger（保留 error/warn 便于线上排错）
+    esbuild: {
+      drop: ['debugger'],
+      pure: ['console.log', 'console.info', 'console.debug'],
+    },
     rollupOptions: {
       output: {
         // 只对「零依赖的叶子库」echarts 做手动拆分：它只在仪表盘路由被动态加载，
