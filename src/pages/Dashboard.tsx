@@ -1,5 +1,18 @@
 import { useRef, useState } from 'react'
-import { Button, Card, Col, Row, Segmented, Skeleton, Space, Tag, Timeline } from 'antd'
+import {
+  Button,
+  Card,
+  Col,
+  Descriptions,
+  Drawer,
+  Row,
+  Segmented,
+  Skeleton,
+  Space,
+  Steps,
+  Tag,
+  Timeline,
+} from 'antd'
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -12,13 +25,15 @@ import {
 } from '@ant-design/icons'
 import EChart from '../components/EChart'
 import Sparkline from '../components/Sparkline'
-import { STATUS_MAP } from '../constants/status'
+import { STATUS_MAP, STATUS_FLOW } from '../constants/status'
 import { hasAccess } from '../access'
 import { getDashboard } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { useCountUp } from '../hooks/useCountUp'
 import { linearForecast } from '../utils/forecast'
-import type { AccessAction } from '../types'
+import type { AccessAction, Order } from '../types'
+
+const SERIES_COLORS = ['#4f6ef2', '#fa8c16', '#13c2c2', '#722ed1', '#52c41a']
 
 function StatCard({
   icon,
@@ -111,13 +126,16 @@ function DashboardSkeleton() {
   )
 }
 
+type TrendView = 'overview' | 'product' | 'forecast'
+
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  // 图表下钻状态：null = 全年月度视图，'1月' 等 = 该月每日视图
+  // 图表下钻状态：总览下钻到某月；分产品视图下钻到某个产品
   const [drillMonth, setDrillMonth] = useState<string | null>(null)
-  // 趋势卡视图：总览（可下钻）/ 分产品多折线 / 预测分析
-  const [view, setView] = useState<'overview' | 'product' | 'forecast'>('overview')
+  const [drillProduct, setDrillProduct] = useState<string | null>(null)
+  const [view, setView] = useState<TrendView>('overview')
+  const [feedOrder, setFeedOrder] = useState<Order | null>(null) // 动态点击后展示的订单
   // Hooks 必须在任何条件 return 之前调用
   const chartBoxRef = useRef<HTMLDivElement | null>(null)
   // 数据由 React Query 管理：30 秒缓存内切页秒开，invalidate 后自动刷新
@@ -128,6 +146,17 @@ export default function Dashboard() {
   // 权限感知的卡片跳转：没有对应权限点的卡片不可点击
   const cardClick = (action: AccessAction, path: string) =>
     hasAccess(user, action) ? () => navigate(path) : undefined
+
+  // 区域下钻：点击趋势图任意位置，按横坐标换算出最近的月份
+  const handleTrendZrClick = (e: { offsetX: number; offsetY: number }) => {
+    if (drillMonth || !chartBoxRef.current) return
+    const months = data.salesTrend.months
+    const gridLeft = 50
+    const plotWidth = chartBoxRef.current.clientWidth - gridLeft - 24
+    const idx = Math.round(((e.offsetX - gridLeft) / plotWidth) * (months.length - 1))
+    const clamped = Math.min(months.length - 1, Math.max(0, idx))
+    setDrillMonth(months[clamped])
+  }
 
   // 统计卡配置：统一描述四张卡片（点击 = 拥有对应权限点时跳转模块）
   const cards = [
@@ -191,20 +220,9 @@ export default function Dashboard() {
     },
   ]
 
-  // 区域下钻：点击趋势图任意位置，按横坐标换算出最近的月份
-  const handleTrendZrClick = (e: { offsetX: number; offsetY: number }) => {
-    if (drillMonth || !chartBoxRef.current) return
-    const months = data.salesTrend.months
-    const gridLeft = 50
-    const plotWidth = chartBoxRef.current.clientWidth - gridLeft - 24
-    const idx = Math.round(((e.offsetX - gridLeft) / plotWidth) * (months.length - 1))
-    const clamped = Math.min(months.length - 1, Math.max(0, idx))
-    setDrillMonth(months[clamped])
-  }
-
-  // 图表下钻：总览视图下，drillMonth 有值时切换为该月每日销售额折线
+  // —— 视图一：总览 ——（月度总折线；总览下可下钻到某月每日）
   const daily = drillMonth && view === 'overview' ? data.salesDaily[drillMonth] : undefined
-  const lineOption = daily
+  const overviewOption = daily
     ? {
         tooltip: { trigger: 'axis' },
         grid: { left: 50, right: 24, top: 30, bottom: 34 },
@@ -238,8 +256,7 @@ export default function Dashboard() {
         ],
       }
 
-  // 「分产品」多折线：TOP5 产品各自的月度销售额（从全量订单按月聚合）
-  const SERIES_COLORS = ['#4f6ef2', '#fa8c16', '#13c2c2', '#722ed1', '#52c41a']
+  // —— 视图二：分产品多折线 ——（点击某条折线 → 下钻到该产品月度柱状图）
   const productOption = {
     tooltip: { trigger: 'axis' },
     legend: { data: data.productTrend.series.map((s) => s.name), bottom: 0 },
@@ -256,7 +273,28 @@ export default function Dashboard() {
     })),
   }
 
-  // 「预测」视图：历史实际 + 最小二乘线性外推（虚线），markLine 标出预测起点
+  const focused = drillProduct
+    ? data.productTrend.series.find((s) => s.name === drillProduct)
+    : undefined
+  const productFocusOption = focused
+    ? {
+        tooltip: { trigger: 'axis' },
+        grid: { left: 70, right: 24, top: 30, bottom: 34 },
+        xAxis: { type: 'category', data: data.productTrend.months },
+        yAxis: { type: 'value', name: '元' },
+        series: [
+          {
+            name: drillProduct,
+            type: 'bar',
+            data: focused.data,
+            barWidth: 18,
+            itemStyle: { borderRadius: [6, 6, 0, 0], color: '#4f6ef2' },
+          },
+        ],
+      }
+    : null
+
+  // —— 视图三：预测 ——（历史实际 + 最小二乘线性外推虚线 + 预测起点标线）
   const fc = linearForecast(data.salesTrend.values, 2)
   const lastActual = data.salesTrend.values[data.salesTrend.values.length - 1]
   const forecastOption = {
@@ -293,52 +331,35 @@ export default function Dashboard() {
   }
 
   const trendOption =
-    view === 'product' ? productOption : view === 'forecast' ? forecastOption : lineOption
+    view === 'product'
+      ? (productFocusOption ?? productOption)
+      : view === 'forecast'
+        ? forecastOption
+        : overviewOption
 
-  const pieOption = {
-    tooltip: { trigger: 'item', formatter: '{b}：{c} ({d}%)' },
-    legend: { bottom: 0 },
-    series: [
-      {
-        type: 'pie',
-        radius: ['42%', '66%'],
-        data: data.channels,
-        label: { formatter: '{b}\n{d}%' },
-      },
-    ],
-  }
+  // 分产品下钻的汇总信息
+  const focusSummary = focused
+    ? {
+        qty: data.topProducts.find((p) => p.name === focused.name)?.qty ?? 0,
+        amount: focused.data.reduce((s, n) => s + n, 0),
+        share: Math.round(
+          (focused.data.reduce((s, n) => s + n, 0) /
+            data.productTrend.series.reduce(
+              (s, ser) => s + ser.data.reduce((a, b) => a + b, 0),
+              0,
+            )) *
+            100,
+        ),
+      }
+    : null
 
-  // 横向条形图：销量升序排列，第一名的柱子显示在最上面
-  const topAsc = [...data.topProducts].reverse()
-  const topOption = {
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: { type: 'shadow' },
-      formatter: (params: { name: string; value: number }[]) => {
-        const p = params[0]
-        const item = data.topProducts.find((x) => x.name === p.name)
-        return `${p.name}<br/>销量 ${p.value} 件 · 销售额 ¥${(item?.amount ?? 0).toLocaleString()}`
-      },
-    },
-    grid: { left: 110, right: 40, top: 10, bottom: 24 },
-    xAxis: { type: 'value' },
-    yAxis: { type: 'category', data: topAsc.map((p) => p.name) },
-    series: [
-      {
-        type: 'bar',
-        data: topAsc.map((p) => p.qty),
-        barWidth: 14,
-        itemStyle: { color: '#4f6ef2', borderRadius: [0, 7, 7, 0] },
-      },
-    ],
-  }
-
+  // 最新动态时间线：状态 emoji + 状态色圆点，点击打开订单详情
   const timelineItems = data.recentOrders.map((o) => {
     const s = STATUS_MAP[o.status]
     return {
       color: s.color,
       children: (
-        <div className="feed-item" key={o.id}>
+        <div className="feed-item" key={o.id} onClick={() => setFeedOrder(o)}>
           <div className="feed-head">
             <span className="feed-emoji">{s.emoji}</span>
             <span className="feed-user">{o.userName}</span>
@@ -356,6 +377,12 @@ export default function Dashboard() {
       ),
     }
   })
+
+  const trendTitles: Record<TrendView, string> = {
+    overview: drillMonth ? `${drillMonth} · 每日销售额` : '月度销售额趋势',
+    product: drillProduct ? `${drillProduct} · 月度销售额` : '分产品销售额趋势（TOP5）',
+    forecast: '销售额预测 · 线性回归外推',
+  }
 
   return (
     <div>
@@ -381,15 +408,7 @@ export default function Dashboard() {
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col xs={24} lg={14}>
           <Card
-            title={
-              view === 'overview' && drillMonth
-                ? `${drillMonth} · 每日销售额`
-                : view === 'product'
-                  ? '分产品销售额趋势（TOP5）'
-                  : view === 'forecast'
-                    ? '销售额预测 · 线性回归外推'
-                    : '月度销售额趋势'
-            }
+            title={trendTitles[view]}
             extra={
               <Space>
                 {view === 'overview' && drillMonth && (
@@ -397,10 +416,19 @@ export default function Dashboard() {
                     ← 返回全年
                   </Button>
                 )}
+                {view === 'product' && drillProduct && (
+                  <Button size="small" onClick={() => setDrillProduct(null)}>
+                    ← 返回分产品
+                  </Button>
+                )}
                 <Segmented
                   size="small"
                   value={view}
-                  onChange={(v) => setView(v as typeof view)}
+                  onChange={(v) => {
+                    setDrillMonth(null)
+                    setDrillProduct(null)
+                    setView(v as TrendView)
+                  }}
                   options={[
                     { label: '总览', value: 'overview' },
                     { label: '分产品', value: 'product' },
@@ -411,6 +439,13 @@ export default function Dashboard() {
             }
           >
             <div ref={chartBoxRef}>
+              {view === 'product' && focusSummary && drillProduct && (
+                <div style={{ fontSize: 12, color: '#999', marginBottom: 8 }}>
+                  近 10 个月累计销量 <strong>{focusSummary.qty} 件</strong> · 累计销售额{' '}
+                  <strong>¥{focusSummary.amount.toLocaleString()}</strong> · 占 TOP5 总量约{' '}
+                  <strong>{focusSummary.share}%</strong>
+                </div>
+              )}
               {view === 'forecast' && (
                 <div style={{ fontSize: 12, color: '#999', marginBottom: 8 }}>
                   基于近 10 个月最小二乘线性回归外推 · 拟合优度 R² = {fc.r2} · 预计 11 月{' '}
@@ -421,29 +456,66 @@ export default function Dashboard() {
                 option={trendOption}
                 style={{ height: 300 }}
                 onZrClick={view === 'overview' ? handleTrendZrClick : undefined}
+                onEvents={
+                  view === 'product'
+                    ? {
+                        click: (params: { seriesName?: string }) => {
+                          if (params.seriesName) setDrillProduct(params.seriesName)
+                        },
+                      }
+                    : undefined
+                }
               />
             </div>
           </Card>
         </Col>
         <Col xs={24} lg={10}>
-          <Card title="流量渠道占比">
-            <EChart option={pieOption} style={{ height: 300 }} />
+          <Card
+            title="最新动态"
+            extra={<span style={{ fontSize: 12, color: '#999' }}>点击可查看订单详情</span>}
+          >
+            <Timeline items={timelineItems} />
           </Card>
         </Col>
       </Row>
 
-      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-        <Col xs={24} lg={14}>
-          <Card title="商品销量 TOP5">
-            <EChart option={topOption} style={{ height: 300 }} />
-          </Card>
-        </Col>
-        <Col xs={24} lg={10}>
-          <Card title="最新动态">
-            <Timeline items={timelineItems} style={{ marginTop: 12 }} />
-          </Card>
-        </Col>
-      </Row>
+      {/* 动态点击后的订单详情抽屉 */}
+      <Drawer
+        title={feedOrder ? `订单详情：${feedOrder.id}` : ''}
+        width={420}
+        open={!!feedOrder}
+        onClose={() => setFeedOrder(null)}
+      >
+        {feedOrder && (
+          <div>
+            {feedOrder.status === 'cancelled' ? (
+              <div className="order-cancelled">🚫 该订单已取消，流程终止</div>
+            ) : (
+              <Steps
+                size="small"
+                current={STATUS_FLOW.indexOf(feedOrder.status)}
+                items={STATUS_FLOW.map((s) => ({ title: STATUS_MAP[s].text }))}
+                style={{ marginBottom: 24 }}
+              />
+            )}
+            <Descriptions column={1} bordered size="small">
+              <Descriptions.Item label="订单号">{feedOrder.id}</Descriptions.Item>
+              <Descriptions.Item label="商品">{feedOrder.product}</Descriptions.Item>
+              <Descriptions.Item label="数量">{feedOrder.qty} 件</Descriptions.Item>
+              <Descriptions.Item label="金额">
+                ¥{feedOrder.amount.toLocaleString()}
+              </Descriptions.Item>
+              <Descriptions.Item label="买家">{feedOrder.userName}</Descriptions.Item>
+              <Descriptions.Item label="状态">
+                <Tag color={STATUS_MAP[feedOrder.status].color}>
+                  {STATUS_MAP[feedOrder.status].text}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="下单时间">{feedOrder.createdAt}</Descriptions.Item>
+            </Descriptions>
+          </div>
+        )}
+      </Drawer>
     </div>
   )
 }

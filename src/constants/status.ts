@@ -10,3 +10,6 @@ export const STATUS_MAP: Record<
   done: { text: '已完成', color: 'green', emoji: '✅', chipColor: '#52c41a' },
   cancelled: { text: '已取消', color: 'default', emoji: '🚫', chipColor: '#bfbfbf' },
 }
+
+// 订单状态流：Steps 进度可视化用
+export const STATUS_FLOW: OrderStatus[] = ['pending', 'paid', 'done']
