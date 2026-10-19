@@ -14,6 +14,8 @@ JWT 鉴权 · 服务端分页 CRUD · 三级权限 · ⌘K 命令面板 · 暗�
 [![CI](https://github.com/wjh941/yunfan-admin/actions/workflows/ci.yml/badge.svg)](https://github.com/wjh941/yunfan-admin/actions/workflows/ci.yml)
 [![Deployed on Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000?logo=vercel&logoColor=white)](https://yunfan-admin.vercel.app)
 
+> **“工欲善其事，必先利其器。”** —— 《论语》
+
 </div>
 
 ![仪表盘预览](docs/images/dashboard.png)
