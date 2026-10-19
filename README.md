@@ -14,7 +14,7 @@ JWT 鉴权 · 服务端分页 CRUD · 三级权限 · ⌘K 命令面板 · 暗�
 [![CI](https://github.com/wjh941/yunfan-admin/actions/workflows/ci.yml/badge.svg)](https://github.com/wjh941/yunfan-admin/actions/workflows/ci.yml)
 [![Deployed on Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000?logo=vercel&logoColor=white)](https://yunfan-admin.vercel.app)
 
-> **“工欲善其事，必先利其器。”** —— 《论语》
+> 🎬 **使用场景**：每个公司都需要一个运营后台——看销售、管订单、管用户、控权限。云帆 Admin 是从零实现的完整练手版：JWT 鉴权、RBAC 三级权限、服务端分页 CRUD、⌘K 命令面板，全部带测试与 CI。
 
 </div>
 
