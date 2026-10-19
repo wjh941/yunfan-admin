@@ -1,23 +1,29 @@
 import { createContext, useContext, useMemo } from 'react'
-import type { ReactNode } from 'react'
+import type { Dispatch, ReactNode, SetStateAction } from 'react'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 
 interface ThemeContextValue {
   dark: boolean
   toggle: () => void
+  /** 全局水印开关（默认开启，持久化到 localStorage） */
+  watermark: boolean
+  setWatermark: Dispatch<SetStateAction<boolean>>
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [dark, setDark] = useLocalStorage('yunfan_dark', false)
+  const [watermark, setWatermark] = useLocalStorage('yunfan_watermark', true)
 
   const value = useMemo(
     () => ({
       dark,
       toggle: () => setDark((d) => !d),
+      watermark,
+      setWatermark,
     }),
-    [dark, setDark],
+    [dark, setDark, watermark, setWatermark],
   )
 
   // body 挂 class，让 antd 之外的元素（登录页背景等）也跟随主题

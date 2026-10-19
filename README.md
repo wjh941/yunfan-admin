@@ -36,6 +36,7 @@ JWT 鉴权 · 服务端分页 CRUD · 三级权限 · ⌘K 命令面板 · 暗�
 - 💠 **路由进度条** —— 切换页面时顶部渐变进度条（学习 shadcn-admin）
 - 🔐 **JWT 登录鉴权** —— axios 拦截器自动携带 token、401 统一回收登录态、路由守卫 + 登录后回跳
 - 🛡️ **RBAC 权限（后端下发）** —— 权限点由登录接口下发，前端按权限动态渲染菜单/路由/按钮（参考 ant-design-pro access 模式）
+- 🖋️ **全局水印** —— 登录用户名 Canvas 平铺水印（-22° 旋转、低透明度、不挡交互），覆盖层防删改自动重挂，设置菜单可开关（对齐 ant-design-pro 的企业级水印能力，防截图泄露）
 - 🗒️ **多标签页导航** —— 访问过的页面自动生成标签，支持右键菜单（刷新 / 关闭当前 / 关闭其他 / 关闭右侧），状态持久化（学习 soybean-admin）
 - 📈 **图表下钻** —— 点击趋势图任意位置下钻到该月每日销售额，一键返回全年视图
 - 🖱️ **统计卡联动** —— 点击数据卡片跳转对应管理模块，无权限的卡片自动禁用跳转
@@ -45,7 +46,7 @@ JWT 鉴权 · 服务端分页 CRUD · 三级权限 · ⌘K 命令面板 · 暗�
 - 📈 **数据可视化 + 图表下钻** —— 趋势图三视图（总览可下钻每日 / TOP5 分产品多折线 / 线性回归预测 11-12 月），点击任意位置自动匹配最近月份；统计卡权限感知跳转
 - 🚀 **路由级代码分割** —— React.lazy + Suspense，每页独立 chunk，echarts(531KB) 仅在仪表盘路由加载
 - 🧱 **前后端一体部署** —— 开发环境 json-server，生产环境 Vercel Serverless Functions，接口层零改动切换
-- 🧪 **Vitest 单测 + CI** —— 权限判断与分页工具 12 个用例，GitHub Actions 自动执行类型检查 / 测试 / 构建
+- 🧪 **Vitest 单测 + CI** —— 权限 / 分页 / 组件级 24 个用例，GitHub Actions 自动执行类型检查 / 测试 / 构建
 - 🧭 面包屑导航、返回顶部、页面切换动画、骨架屏、CSV 导出、消息通知中心、响应式布局
 
 ## 📈 Lighthouse 跑分
@@ -143,7 +144,7 @@ node scripts/gen-db.mjs  # 重置本地数据库
 └── src/
     ├── access.ts               # 权限收敛模块（参考 ant-design-pro）
     ├── api/                    # request.ts(axios封装) + index.ts(接口函数)
-    ├── components/             # EChart / CommandPalette / NotificationBell / PageLoading
+    ├── components/             # EChart / CommandPalette / NotificationBell / WatermarkLayer
     ├── constants/              # 状态字典
     ├── context/                # AuthContext / ThemeContext
     ├── hooks/                  # useLocalStorage

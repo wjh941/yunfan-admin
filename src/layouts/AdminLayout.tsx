@@ -8,6 +8,7 @@ import {
   Layout,
   Menu,
   Space,
+  Switch,
   Tabs,
   Tooltip,
   theme,
@@ -19,6 +20,7 @@ import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   SearchOutlined,
+  SettingOutlined,
   ShoppingOutlined,
   TeamOutlined,
   UserOutlined,
@@ -31,6 +33,7 @@ import type { ReactNode } from 'react'
 import CommandPalette from '../components/CommandPalette'
 import NotificationBell from '../components/NotificationBell'
 import BackToTop from '../components/BackToTop'
+import WatermarkLayer from '../components/WatermarkLayer'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 
 const { Sider, Header, Content, Footer } = Layout
@@ -65,7 +68,7 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const { user, logout } = useAuth()
-  const { dark, toggle } = useTheme()
+  const { dark, toggle, watermark, setWatermark } = useTheme()
   const { token: themeToken } = theme.useToken()
 
   // 菜单权限：只显示当前角色有权限点的菜单项（判断逻辑收敛在 access.ts）
@@ -123,128 +126,158 @@ export default function AdminLayout() {
   }
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <CommandPalette />
+    // 全局水印挂在后台布局顶层（而非 body 悬浮层）：登录页在 AdminLayout 之外，天然无水印
+    <WatermarkLayer>
+      <Layout style={{ minHeight: '100vh' }}>
+        <CommandPalette />
 
-      <Sider
-        theme="dark"
-        trigger={null}
-        collapsible
-        collapsed={collapsed}
-        breakpoint="lg"
-        onBreakpoint={(broken) => setCollapsed(broken)}
-      >
-        <div className="logo">{collapsed ? '⛵' : '⛵ 云帆管理后台'}</div>
-        <Menu
+        <Sider
           theme="dark"
-          mode="inline"
-          selectedKeys={[pathname]}
-          items={visibleMenuItems}
-          onClick={({ key }) => navigate(String(key))}
-        />
-      </Sider>
-
-      <Layout>
-        <Header
-          style={{
-            background: themeToken.colorBgContainer,
-            padding: '0 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            borderBottom: `1px solid ${themeToken.colorBorderSecondary}`,
-          }}
+          trigger={null}
+          collapsible
+          collapsed={collapsed}
+          breakpoint="lg"
+          onBreakpoint={(broken) => setCollapsed(broken)}
         >
-          <Space size={16}>
-            {collapsed ? (
-              <MenuUnfoldOutlined style={{ fontSize: 16 }} onClick={() => setCollapsed(false)} />
-            ) : (
-              <MenuFoldOutlined style={{ fontSize: 16 }} onClick={() => setCollapsed(true)} />
-            )}
-            <Breadcrumb
-              items={[{ title: <Link to="/">首页</Link> }, { title: TITLES[pathname] ?? '页面' }]}
-            />
-          </Space>
-
-          <Space size={16}>
-            {/* 全局搜索入口（也可以直接按 Ctrl/⌘ + K） */}
-            <Button
-              size="small"
-              className="palette-trigger"
-              icon={<SearchOutlined />}
-              onClick={() => window.dispatchEvent(new Event('yunfan:open-palette'))}
-            >
-              搜索 <span className="kbd">Ctrl K</span>
-            </Button>
-
-            <Tooltip title={dark ? '切换亮色模式' : '切换暗色模式'}>
-              <Button type="text" size="small" style={{ fontSize: 16 }} onClick={toggle}>
-                {dark ? '☀️' : '🌙'}
-              </Button>
-            </Tooltip>
-
-            <NotificationBell />
-
-            <Dropdown
-              menu={{
-                items: [
-                  {
-                    key: 'logout',
-                    icon: <LogoutOutlined />,
-                    label: '退出登录',
-                    onClick: () => {
-                      localStorage.removeItem('yunfan_tabs') // 不同角色的标签互不影响
-                      logout()
-                    },
-                  },
-                ],
-              }}
-            >
-              <Space style={{ cursor: 'pointer' }}>
-                <Avatar style={{ background: '#4f6ef2' }} icon={!user && <UserOutlined />}>
-                  {user?.avatar}
-                </Avatar>
-                <span>{user?.name}</span>
-              </Space>
-            </Dropdown>
-          </Space>
-        </Header>
-
-        {/* 多标签页导航（学习 soybean-admin）：首页标签固定不可关闭，右键有批量操作菜单 */}
-        <div className="tab-bar" style={{ background: themeToken.colorBgContainer }}>
-          <Tabs
-            type="editable-card"
-            size="small"
-            hideAdd
-            activeKey={pathname}
-            items={tabs.map((t) => ({
-              key: t.key,
-              closable: t.key !== '/',
-              label: (
-                <Dropdown trigger={['contextMenu']} menu={buildTabMenu(t)}>
-                  <span>{t.label}</span>
-                </Dropdown>
-              ),
-            }))}
-            onChange={(key) => navigate(key)}
-            onEdit={(targetKey, action) => action === 'remove' && removeTab(String(targetKey))}
+          <div className="logo">{collapsed ? '⛵' : '⛵ 云帆管理后台'}</div>
+          <Menu
+            theme="dark"
+            mode="inline"
+            selectedKeys={[pathname]}
+            items={visibleMenuItems}
+            onClick={({ key }) => navigate(String(key))}
           />
-        </div>
+        </Sider>
 
-        <Content style={{ margin: 16 }}>
-          {/* key 换页面时重新挂载，触发入场动画 */}
-          <div className="page-fade" key={pathname}>
-            <Outlet />
+        <Layout>
+          <Header
+            style={{
+              background: themeToken.colorBgContainer,
+              padding: '0 16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              borderBottom: `1px solid ${themeToken.colorBorderSecondary}`,
+            }}
+          >
+            <Space size={16}>
+              {collapsed ? (
+                <MenuUnfoldOutlined style={{ fontSize: 16 }} onClick={() => setCollapsed(false)} />
+              ) : (
+                <MenuFoldOutlined style={{ fontSize: 16 }} onClick={() => setCollapsed(true)} />
+              )}
+              <Breadcrumb
+                items={[{ title: <Link to="/">首页</Link> }, { title: TITLES[pathname] ?? '页面' }]}
+              />
+            </Space>
+
+            <Space size={16}>
+              {/* 全局搜索入口（也可以直接按 Ctrl/⌘ + K） */}
+              <Button
+                size="small"
+                className="palette-trigger"
+                icon={<SearchOutlined />}
+                onClick={() => window.dispatchEvent(new Event('yunfan:open-palette'))}
+              >
+                搜索 <span className="kbd">Ctrl K</span>
+              </Button>
+
+              <Tooltip title={dark ? '切换亮色模式' : '切换暗色模式'}>
+                <Button type="text" size="small" style={{ fontSize: 16 }} onClick={toggle}>
+                  {dark ? '☀️' : '🌙'}
+                </Button>
+              </Tooltip>
+
+              {/* 界面设置菜单：全局水印开关（企业级能力，对齐 ant-design-pro） */}
+              <Dropdown
+                trigger={['click']}
+                menu={{
+                  items: [
+                    {
+                      key: 'watermark',
+                      label: (
+                        // pointer-events: none 让整行点击都走 menu.onClick，Switch 只作状态展示，
+                        // 避免 Switch onChange + 菜单 onClick 双触发来回抵消
+                        <Space style={{ pointerEvents: 'none' }}>
+                          全局水印
+                          <Switch size="small" checked={watermark} />
+                        </Space>
+                      ),
+                    },
+                  ],
+                  onClick: ({ key }) => {
+                    if (key === 'watermark') setWatermark((v) => !v)
+                  },
+                }}
+              >
+                <Tooltip title="界面设置">
+                  <Button type="text" size="small" icon={<SettingOutlined />} />
+                </Tooltip>
+              </Dropdown>
+
+              <NotificationBell />
+
+              <Dropdown
+                menu={{
+                  items: [
+                    {
+                      key: 'logout',
+                      icon: <LogoutOutlined />,
+                      label: '退出登录',
+                      onClick: () => {
+                        localStorage.removeItem('yunfan_tabs') // 不同角色的标签互不影响
+                        logout()
+                      },
+                    },
+                  ],
+                }}
+              >
+                <Space style={{ cursor: 'pointer' }}>
+                  <Avatar style={{ background: '#4f6ef2' }} icon={!user && <UserOutlined />}>
+                    {user?.avatar}
+                  </Avatar>
+                  <span>{user?.name}</span>
+                </Space>
+              </Dropdown>
+            </Space>
+          </Header>
+
+          {/* 多标签页导航（学习 soybean-admin）：首页标签固定不可关闭，右键有批量操作菜单 */}
+          <div className="tab-bar" style={{ background: themeToken.colorBgContainer }}>
+            <Tabs
+              type="editable-card"
+              size="small"
+              hideAdd
+              activeKey={pathname}
+              items={tabs.map((t) => ({
+                key: t.key,
+                closable: t.key !== '/',
+                label: (
+                  <Dropdown trigger={['contextMenu']} menu={buildTabMenu(t)}>
+                    <span>{t.label}</span>
+                  </Dropdown>
+                ),
+              }))}
+              onChange={(key) => navigate(key)}
+              onEdit={(targetKey, action) => action === 'remove' && removeTab(String(targetKey))}
+            />
           </div>
-          <BackToTop />
-        </Content>
 
-        <Footer
-          style={{ textAlign: 'center', fontSize: 12, color: themeToken.colorTextQuaternary }}
-        >
-          云帆 Admin · React 18 + Vite + Ant Design + ECharts
-        </Footer>
+          <Content style={{ margin: 16 }}>
+            {/* key 换页面时重新挂载，触发入场动画 */}
+            <div className="page-fade" key={pathname}>
+              <Outlet />
+            </div>
+            <BackToTop />
+          </Content>
+
+          <Footer
+            style={{ textAlign: 'center', fontSize: 12, color: themeToken.colorTextQuaternary }}
+          >
+            云帆 Admin · React 18 + Vite + Ant Design + ECharts
+          </Footer>
+        </Layout>
       </Layout>
-    </Layout>
+    </WatermarkLayer>
   )
 }
